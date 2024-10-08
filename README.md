@@ -3,7 +3,7 @@
 Trouble picking out fits for the upcoming days?  
 Too much clothes to keep track of?  
 Look no further. Our revolutionary app is here to assist you in keeping up with fashion trends and weather.  
-Simply upload items in your wardrobe so that we can suggest future outfits based on the weather conditions and the current fashion trend for you, while providing clothing suggestions to fill in the gaps in your wardrobe.
+Simply upload items in your wardrobe so that we can suggest future outfits based on the weather conditions and the current fashion trend for you while providing clothing suggestions to fill in the gaps in your wardrobe.
 
 ## Features
 
@@ -64,8 +64,7 @@ Database Creation: Creates the database if it does not exist.
 Table Definitions: Creates tables with appropriate fields, data types, and relationships.
 Sample Data Insertion: Inserts sample data into each table to facilitate testing and development.
 
-Usage
-Set Up the Database:
+Usage (Set Up the Database):
 Run the SQL script in a MySQL-compatible database management system.
 Ensure that the database server is running.
 
@@ -75,7 +74,7 @@ After creating the database and tables, you can use SQL queries to test and retr
 You can modify the sample data as needed for further testing.
 
 
-Requirements
+Requirements:
 MySQL or any compatible relational database management system.
 Basic knowledge of SQL to interact with the database.
 
