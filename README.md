@@ -57,26 +57,55 @@ The database consists of the following tables:
    - **Primary Key:** `product_id`
    - **Foreign Key:** `user_id` references `Users(user_id)`
   
+# Database Setup and Usage Instructions
 
 The provided SQL script includes the following sections:
 
-Database Creation: Creates the database if it does not exist.
-Table Definitions: Creates tables with appropriate fields, data types, and relationships.
-Sample Data Insertion: Inserts sample data into each table to facilitate testing and development.
+## 1. Database Creation
+Creates the database if it does not already exist.
 
-Usage (Set Up the Database):
-Run the SQL script in a MySQL-compatible database management system.
-Ensure that the database server is running.
+## 2. Table Definitions
+Defines tables with appropriate fields, data types, and relationships.
 
+## 3. Sample Data Insertion
+Inserts sample data into each table to facilitate testing and development.
 
-Testing:
-After creating the database and tables, you can use SQL queries to test and retrieve data.
-You can modify the sample data as needed for further testing.
+## Usage Instructions
 
+### Setting Up the Database
 
-Requirements:
-MySQL or any compatible relational database management system.
-Basic knowledge of SQL to interact with the database.
+Follow these steps to set up the database:
+
+1. **Ensure MySQL Server is Running**
+   - Make sure your MySQL server is started and accessible.
+
+2. **Open Your Database Management System**
+   - Launch a MySQL-compatible database management system (e.g., MySQL Workbench, phpMyAdmin, etc.).
+
+3. **Access the Query Editor**
+   - Navigate to the query editor section of your DBMS.
+
+4. **Copy the SQL Script**
+   - Copy the entire SQL script provided in this repository.
+
+5. **Paste the SQL Script**
+   - Paste the copied script into the query editor.
+
+6. **Execute the Script**
+   - Run the script by clicking the 'Execute' button or using the appropriate command (usually F5 or Ctrl + Enter).
+   - This will create the database, define tables, and insert sample data.
+
+### Testing the Database
+
+After the database and tables are set up:
+
+- You can run SQL queries to test and retrieve data.
+- Feel free to modify the sample data as needed for further testing.
+
+## Requirements
+- MySQL or any compatible relational database management system.
+- Basic knowledge of SQL to interact with the database.
+
 
 
 ## Schema Diagram
