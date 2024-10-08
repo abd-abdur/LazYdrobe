@@ -32,7 +32,7 @@ The database consists of the following tables:
    - **Foreign Key:** `user_id` references `Users(user_id)`
 
 3. **Outfits**
-   - Represents outfit suggestions made to users, including occasion, weather conditions, and trend score.
+   - Represents outfit suggestions made to users, including occasion, weather conditions.
    - **Primary Key:** `outfit_id`
    - **Foreign Key:** `user_id` references `Users(user_id)`
 
