@@ -5,7 +5,7 @@ Look no further. Our revolutionary app is here to assist you in keeping up with 
 Simply upload items in your wardrobe so that we can suggest future outfits based on the weather conditions and the current fashion trend for you while providing clothing suggestions to fill in the gaps in your wardrobe.
 
 ## Features
-- Suggest outfit ideas based on weather
+- Suggest outfit ideas based on weather and fashion trend
 - Suggest clothing pieces to purchase that is not in wardrobe
 
 ## Prerequisites
