@@ -70,9 +70,9 @@ Defines tables with appropriate fields, data types, and relationships.
 ### 3. Sample Data Insertion
 Inserts sample data into each table to facilitate testing and development.
 
-### Usage Instructions
+## Usage Instructions
 
-## Setting Up the Database
+### Setting Up the Database
 
 Follow these steps to set up the database:
 
@@ -95,7 +95,7 @@ Follow these steps to set up the database:
    - Run the script by clicking the 'Execute' button or using the appropriate command (usually F5 or Ctrl + Enter).
    - This will create the database, define tables, and insert sample data.
 
-## Testing the Database
+### Testing the Database
 
 After the database and tables are set up:
 
