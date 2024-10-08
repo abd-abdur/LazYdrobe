@@ -184,29 +184,6 @@ Inserts sample data into each table to facilitate testing and development.
 
 ## Setting Up the Database
 
-Follow these steps to set up the database:
-
-1. **Ensure MySQL Server is Running**
-   - Make sure your MySQL server is started and accessible.
-
-2. **Open Your Database Management System**
-   - Launch a MySQL-compatible database management system (e.g., MySQL Workbench, phpMyAdmin, etc.).
-
-3. **Access the Query Editor**
-   - Navigate to the query editor section of your DBMS.
-  
-4. **Copy the SQL Script**
-   - Copy the entire SQL script provided in this repository.
-
-5. **Paste the SQL Script**
-   - Paste the copied script into the query editor.
-
-6. **Execute the Script**
-   - Run the script by clicking the 'Execute' button or using the appropriate command (usually F5 or Ctrl + Enter).
-   - This will create the database, define tables, and insert sample data.
-
-## Detailed Rundown: 
-
 ### Step 1: Clone the Repository
 
 Clone this repository or download the source code using the following command:
@@ -231,8 +208,15 @@ source .venv/bin/activate
 Install the required packages by running:
 pip install -r requirements.txt
 
-### Step 5: Create the Database
-To set up the database, execute the following SQL commands in your MySQL-compatible database management system:
+2. **Access the Query Editor**
+   - Launch a MySQL-compatible database management system (e.g., MySQL Workbench, phpMyAdmin, etc.).
+   - Navigate to the query editor section of your DBMS.
+
+### Step 5: Create the Database & Execute the Script
+   - Copy the entire SQL script provided in this repository.
+   - Paste the copied script into the query editor.
+   - Run the script by clicking the 'Execute' button or using the appropriate command (usually F5 or Ctrl + Enter).
+   - This will create the database, define tables, and insert sample data.
 
 ## Testing the Database
 
