@@ -71,6 +71,8 @@ Stores user information, including preferences and their wardrobe.
 - **Attributes**:
   - `user_id` (Primary Key): Unique identifier for each user.
   - `username`: User's display name.
+  - `email`: User's email address.
+  - `password`: Hashed password for user authentication.
   - `location`: User's location for weather-based outfit suggestions.
   - `preferences`: List of fashion styles preferred by the user.
   - `date_joined`: Date the user registered on the app.
@@ -143,11 +145,11 @@ Stores fashion trend data that helps inform outfit recommendations.
 
 ### **Relationships**
 - **User** to **Clothing**: One-to-Many (a user can have multiple clothing items in their wardrobe).
-- **User** to **WeatherData**: One-to-One (a user gets weather for one location).
-- **Clothing** to **eCommerceProduct**: Many-to-One (a clothing item may have a related e-commerce product).
-- **Outfit** to **Clothing**: Many-to-Many (an outfit consists of multiple wardrobe items, a wardrobe item can be suitable for many outfits).
-- **Outfit** to **WeatherData**: Many-to-Many (outfits can be suitable for many weather conditions).
-- **Outfit** to **Fashion**: Many-to-Many (outfits may follow multiple fashion trends).
+- **Clothing** to **eCommerceProduct**: One-to-One (a clothing item may have a related e-commerce product).
+- **Outfit** to **Clothing**: One-to-Many (an outfit consists of multiple wardrobe items).
+- **Outfit** to **WeatherData**: One-to-One (outfits are suggested based on specific weather conditions).
+- **Outfit** to **Fashion**: Many-to-One (outfits may follow a specific fashion trend).
+- **WeatherData** to **Outfit**: Many-to-One (outfit suggestions are influenced by weather data).
 
 
 ### Why We Chose SQL for LazYdrobe
@@ -169,21 +171,13 @@ Stores fashion trend data that helps inform outfit recommendations.
 
 ## Database Setup and Usage Instructions
 
-The provided SQL script includes the following sections:
+The provided SQL script facilitates the creation and setup of a fashion trend e-commerce database. It includes the following sections:
 
-### 1. Database Creation
-Creates the database if it does not already exist.
-
-### 2. Table Definitions
-Defines tables with appropriate fields, data types, and relationships.
-
-### 3. Sample Data Insertion
-Inserts sample data into each table to facilitate testing and development.
-
-## Setting Up the Database
+Database Creation: Creates the database if it does not already exist.
+Table Definitions: Defines tables with appropriate fields, data types, and relationships.
+Sample Data Insertion: Inserts sample data into each table to facilitate testing and development.
 
 ### Step 1: Clone the Repository
-
 Clone this repository or download the source code using the following command:
 git clone https://github.com/abd-abdur/LazYdrobe.git
 
@@ -192,28 +186,28 @@ Change your current directory to the project directory:
 cd path/to/LazYdrobe
 
 ### Step 3: (Optional) Create a Virtual Environment
-It's recommended to create a virtual environment for this project. You can do this by running:
-python -m venv .venv 
-
-#### Activate the Virtual Environment
-On Windows:
-.venv\Scripts\activate
-
-On macOS and Linux:
-- source .venv/bin/activate
+It's recommended to create a virtual environment for this project. 
+You can do this by running: 
+python -m venv .venv
 
 ### Step 4: Install Required Packages
- - Install the required packages by running: pip install -r requirements.txt
+Install the required packages by running:
+pip install -r requirements.txt
 
-2. **Access the Query Editor**
-   - Launch a MySQL-compatible database management system (e.g., MySQL Workbench, phpMyAdmin, etc.).
-   - Navigate to the query editor section of your DBMS.
+### Step 5: Access the Query Editor
+Launch a MySQL-compatible database management system (e.g., MySQL Workbench, phpMyAdmin, etc.).
+Navigate to the query editor section of your DBMS.
 
-### Step 5: Create the Database & Execute the Script
-   - Copy the entire SQL script provided in this repository.
-   - Paste the copied script into the query editor.
-   - Run the script by clicking the 'Execute' button or using the appropriate command (usually F5 or Ctrl + Enter).
-   - This will create the database, define tables, and insert sample data.
+### Step 6: Copy the entire SQL script provided in this repository
+Paste the copied script into the query editor.
+Run the script by clicking the 'Execute' button or using the appropriate command (usually F5 or Ctrl + Enter).
+This will create the database, define tables, and insert sample data.
+
+### Sample SQL Script Overview
+The SQL script contains the following components:
+
+Database and Table Creation: Creates fashion_trend_ecommerce_db and relevant tables such as Users, Wardrobe_Items, Outfits, etc.
+Data Insertion: Inserts sample users, wardrobe items, outfits, weather data, fashion trends, and e-commerce products.
 
 ## Testing the Database
 
