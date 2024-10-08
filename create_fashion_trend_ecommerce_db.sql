@@ -1,6 +1,6 @@
+-- Creating the database and selecting it
 CREATE DATABASE IF NOT EXISTS fashion_trend_ecommerce_db;
-
-USE fashion_trend_ecommerce_db
+USE fashion_trend_ecommerce_db;
 
 -- Script for Fashion Trend, E-Commerce Products, and other key entities (Users, Wardrobe, Outfits, Weather Data)
 -- Homework: Write SQL scripts to create tables, define constraints, and establish relationships
@@ -105,3 +105,49 @@ CREATE TABLE IF NOT EXISTS E_Commerce_Products (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
+
+-- Sample Data Population
+
+-- Insert sample users
+INSERT INTO Users (username, email, password_hash, location, preferences, date_joined)
+VALUES 
+('john_doe', 'john@example.com', 'hashed_password_1', 'New York', '{"style": "casual"}', NOW()),
+('jane_smith', 'jane@example.com', 'hashed_password_2', 'Los Angeles', '{"style": "formal"}', NOW());
+
+-- Insert sample wardrobe items
+INSERT INTO Wardrobe_Items (user_id, type, season, fabric, color, size, tags, image_url, date_added)
+VALUES 
+(1, 'T-shirt', 'summer', 'cotton', 'blue', 'M', 'casual, light', 'http://example.com/tshirt.jpg', NOW()),
+(1, 'Jeans', 'all_season', 'denim', 'black', '32', 'casual', 'http://example.com/jeans.jpg', NOW()),
+(2, 'Dress', 'summer', 'silk', 'red', 'M', 'formal, evening', 'http://example.com/dress.jpg', NOW());
+
+-- Insert sample outfits
+INSERT INTO Outfits (user_id, occasion, weather_condition, trend_score, date_suggested)
+VALUES 
+(1, 'casual', 'sunny', 7.5, NOW()),
+(2, 'formal', 'cloudy', 8.0, NOW());
+
+-- Insert sample outfit-wardrobe items (junction table)
+INSERT INTO Outfit_Wardrobe_Items (outfit_id, item_id)
+VALUES 
+(1, 1),
+(1, 2),
+(2, 3);
+
+-- Insert sample weather data
+INSERT INTO Weather_Data (user_id, location, temperature, precipitation, wind_speed, humidity, date_fetched)
+VALUES 
+(1, 'New York', 25.5, 0.0, 5.2, 60.0, NOW()),
+(2, 'Los Angeles', 22.3, 0.0, 3.4, 50.0, NOW());
+
+-- Insert sample fashion trends
+INSERT INTO Fashion_Trends (title, description, categories, image_url, date_fetched, source_url)
+VALUES 
+('Summer Florals', 'Floral patterns are in this summer.', 'summer, floral', 'http://example.com/florals.jpg', NOW(), 'http://fashionwebsite.com/floral-trend'),
+('Bold Colors', 'Bright, bold colors are trending this season.', 'bold, colors', 'http://example.com/colors.jpg', NOW(), 'http://fashionwebsite.com/bold-colors');
+
+-- Insert sample e-commerce products
+INSERT INTO E_Commerce_Products (user_id, suggested_item_type, product_name, price, product_url, image_url, date_suggested)
+VALUES 
+(1, 'shirt', 'Blue Casual Shirt', 25.99, 'http://ecommerce.com/product/blue-shirt', 'http://example.com/blue-shirt.jpg', NOW()),
+(2, 'dress', 'Elegant Red Dress', 79.99, 'http://ecommerce.com/product/red-dress', 'http://example.com/red-dress.jpg', NOW());
