@@ -71,8 +71,6 @@ Stores user information, including preferences and their wardrobe.
 - **Attributes**:
   - `user_id` (Primary Key): Unique identifier for each user.
   - `username`: User's display name.
-  - `email`: User's email address.
-  - `password`: Hashed password for user authentication.
   - `location`: User's location for weather-based outfit suggestions.
   - `preferences`: List of fashion styles preferred by the user.
   - `date_joined`: Date the user registered on the app.
@@ -145,11 +143,11 @@ Stores fashion trend data that helps inform outfit recommendations.
 
 ### **Relationships**
 - **User** to **Clothing**: One-to-Many (a user can have multiple clothing items in their wardrobe).
-- **Clothing** to **eCommerceProduct**: One-to-One (a clothing item may have a related e-commerce product).
-- **Outfit** to **Clothing**: One-to-Many (an outfit consists of multiple wardrobe items).
-- **Outfit** to **WeatherData**: One-to-One (outfits are suggested based on specific weather conditions).
-- **Outfit** to **Fashion**: Many-to-One (outfits may follow a specific fashion trend).
-- **WeatherData** to **Outfit**: Many-to-One (outfit suggestions are influenced by weather data).
+- **User** to **WeatherData**: One-to-One (a user gets weather for one location).
+- **Clothing** to **eCommerceProduct**: Many-to-One (a clothing item may have a related e-commerce product).
+- **Outfit** to **Clothing**: Many-to-Many (an outfit consists of multiple wardrobe items, a wardrobe item can be suitable for many outfits).
+- **Outfit** to **WeatherData**: Many-to-Many (outfits can be suitable for many weather conditions).
+- **Outfit** to **Fashion**: Many-to-Many (outfits may follow multiple fashion trends).
 
 
 ### Why We Chose SQL for LazYdrobe
