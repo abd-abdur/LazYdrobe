@@ -2,13 +2,12 @@
 CREATE DATABASE IF NOT EXISTS fashion_trend_ecommerce_db;
 USE fashion_trend_ecommerce_db;
 
--- Script for Fashion Trend, E-Commerce Products, and other key entities (Users, Wardrobe, Outfits, Weather Data)
--- Homework: Write SQL scripts to create tables, define constraints, and establish relationships
+-- Script for Fashion Trends, E-Commerce Products, and other key entities (Users, Wardrobe, Outfits, Weather Data)
 
 -- TABLE: Users
 CREATE TABLE IF NOT EXISTS Users (
     user_id INT PRIMARY KEY AUTO_INCREMENT,  -- Unique ID for each user
-    username VARCHAR(255) NOT NULL,          -- Username
+    username VARCHAR(255) NOT NULL,          -- username
     email VARCHAR(255) UNIQUE NOT NULL,      -- Email address
     password_hash VARCHAR(255) NOT NULL,     -- Hashed password
     location VARCHAR(255),                   -- User's location
