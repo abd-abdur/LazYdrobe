@@ -233,6 +233,3 @@ After the database and tables are set up:
 - You can run SQL queries to test and retrieve data.
 - Feel free to modify the sample data as needed for further testing.
 
-## Requirements
-- MySQL or any compatible relational database management system.
-- Basic knowledge of SQL to interact with the database.
