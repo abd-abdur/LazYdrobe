@@ -57,83 +57,6 @@ The database consists of the following tables:
    - **Primary Key:** `product_id`
    - **Foreign Key:** `user_id` references `Users(user_id)`
   
-## Database Setup and Usage Instructions
-
-The provided SQL script includes the following sections:
-
-### 1. Database Creation
-Creates the database if it does not already exist.
-
-### 2. Table Definitions
-Defines tables with appropriate fields, data types, and relationships.
-
-### 3. Sample Data Insertion
-Inserts sample data into each table to facilitate testing and development.
-
-## Setting Up the Database
-
-Follow these steps to set up the database:
-
-1. **Ensure MySQL Server is Running**
-   - Make sure your MySQL server is started and accessible.
-
-2. **Open Your Database Management System**
-   - Launch a MySQL-compatible database management system (e.g., MySQL Workbench, phpMyAdmin, etc.).
-
-3. **Access the Query Editor**
-   - Navigate to the query editor section of your DBMS.
-  
-4. **Copy the SQL Script**
-   - Copy the entire SQL script provided in this repository.
-
-5. **Paste the SQL Script**
-   - Paste the copied script into the query editor.
-
-6. **Execute the Script**
-   - Run the script by clicking the 'Execute' button or using the appropriate command (usually F5 or Ctrl + Enter).
-   - This will create the database, define tables, and insert sample data.
-
-## Detailed Rundown: 
-
-### Step 1: Clone the Repository
-
-Clone this repository or download the source code using the following command:
-git clone https://github.com/abd-abdur/LazYdrobe.git
-
-### Step 2: Navigate to the Project Directory
-Change your current directory to the project directory:
-cd path/to/LazYdrobe
-
-### Step 3: (Optional) Create a Virtual Environment
-It's recommended to create a virtual environment for this project. You can do this by running:
-python -m venv .venv 
-
-#### Activate the Virtual Environment
-On Windows:
-.venv\Scripts\activate
-
-On macOS and Linux:
-source .venv/bin/activate
-
-### Step 4: Install Required Packages
-Install the required packages by running:
-pip install -r requirements.txt
-
-### Step 5: Create the Database
-To set up the database, execute the following SQL commands in your MySQL-compatible database management system:
-
-## Testing the Database
-
-After the database and tables are set up:
-
-- You can run SQL queries to test and retrieve data.
-- Feel free to modify the sample data as needed for further testing.
-
-## Requirements
-- MySQL or any compatible relational database management system.
-- Basic knowledge of SQL to interact with the database.
-
-
 ## Schema Diagram
 
 ![LazYdrobe Schema](schema.png)
@@ -246,43 +169,78 @@ Stores fashion trend data that helps inform outfit recommendations.
 5. **Data Consistency Over Flexibility**  
    LazYdrobe benefits from the structured schema enforcement SQL provides. While NoSQL offers flexibility, SQL's consistency ensures that wardrobe items, trends, and weather data are always valid and related correctly.
 
-## Setup Instructions
+## Database Setup and Usage Instructions
 
-## Prerequisites
-- Python 3.11 or higher
-- pip (Python package manager)
-- MySQL server
+The provided SQL script includes the following sections:
 
-# Setup
-1. Clone this repository or download the source code. `git clone https://github.com/abd-abdur/LazYdrobe.git`
-2. Navigate to the project directory:
-   ```
-   cd path/to/LazYdrobe
-   ```
-3. Optional: Create a virtual environment
-    ```
-    python -m venv .venv 
+### 1. Database Creation
+Creates the database if it does not already exist.
 
-    # On Windows:
-    .venv\Scripts\activate
+### 2. Table Definitions
+Defines tables with appropriate fields, data types, and relationships.
 
-    # On macOS and Linux:
-    source .venv/bin/activate
+### 3. Sample Data Insertion
+Inserts sample data into each table to facilitate testing and development.
 
-    ```
-4. Install the required packages:
-   ```
-   pip install -r requirements.txt
-   ```
-5. Create a `.env` file in the project root directory and add the following:
-   ```
-   visualcrossing_API_KEY=your_key_here
-   ```
-   Replace `your_key_here` with your visualcrossing connection string from [Visual Crossing](https://www.visualcrossing.com/)
+## Setting Up the Database
 
-## Usage
-To run the application:
-```
-python main.py
-```
-Currently, this only creates a live csv file of weather forcast as we are waiting to get access to APIs. The rest of the database are currently dummy data that we have put together.
+Follow these steps to set up the database:
+
+1. **Ensure MySQL Server is Running**
+   - Make sure your MySQL server is started and accessible.
+
+2. **Open Your Database Management System**
+   - Launch a MySQL-compatible database management system (e.g., MySQL Workbench, phpMyAdmin, etc.).
+
+3. **Access the Query Editor**
+   - Navigate to the query editor section of your DBMS.
+  
+4. **Copy the SQL Script**
+   - Copy the entire SQL script provided in this repository.
+
+5. **Paste the SQL Script**
+   - Paste the copied script into the query editor.
+
+6. **Execute the Script**
+   - Run the script by clicking the 'Execute' button or using the appropriate command (usually F5 or Ctrl + Enter).
+   - This will create the database, define tables, and insert sample data.
+
+## Detailed Rundown: 
+
+### Step 1: Clone the Repository
+
+Clone this repository or download the source code using the following command:
+git clone https://github.com/abd-abdur/LazYdrobe.git
+
+### Step 2: Navigate to the Project Directory
+Change your current directory to the project directory:
+cd path/to/LazYdrobe
+
+### Step 3: (Optional) Create a Virtual Environment
+It's recommended to create a virtual environment for this project. You can do this by running:
+python -m venv .venv 
+
+#### Activate the Virtual Environment
+On Windows:
+.venv\Scripts\activate
+
+On macOS and Linux:
+source .venv/bin/activate
+
+### Step 4: Install Required Packages
+Install the required packages by running:
+pip install -r requirements.txt
+
+### Step 5: Create the Database
+To set up the database, execute the following SQL commands in your MySQL-compatible database management system:
+
+## Testing the Database
+
+After the database and tables are set up:
+
+- You can run SQL queries to test and retrieve data.
+- Feel free to modify the sample data as needed for further testing.
+
+## Requirements
+- MySQL or any compatible relational database management system.
+- Basic knowledge of SQL to interact with the database.
