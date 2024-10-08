@@ -202,11 +202,10 @@ On Windows:
 .venv\Scripts\activate
 
 On macOS and Linux:
-source .venv/bin/activate
+- source .venv/bin/activate
 
 ### Step 4: Install Required Packages
-Install the required packages by running:
-pip install -r requirements.txt
+ - Install the required packages by running: pip install -r requirements.txt
 
 2. **Access the Query Editor**
    - Launch a MySQL-compatible database management system (e.g., MySQL Workbench, phpMyAdmin, etc.).
