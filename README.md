@@ -170,6 +170,16 @@ Stores fashion trend data that helps inform outfit recommendations.
 5. **Data Consistency Over Flexibility**  
    LazYdrobe benefits from the structured schema enforcement SQL provides. While NoSQL offers flexibility, SQL's consistency ensures that wardrobe items, trends, and weather data are always valid and related correctly.
 
+## Prerequisites
+
+Before you set up **LazYdrobe** ensure that you have the following tools installed:
+
+- **MySQL** or a MySQL-compatible database management system (DBMS), such as MariaDB.
+- **Python** (version 3.7 or higher).
+- **Git** (optional, for cloning the repository).
+- **A MySQL Query Editor** (e.g., MySQL Workbench, phpMyAdmin, or DBeaver).
+- **Pip** (to manage Python package installations).
+
 ## Database Setup and Usage Instructions
 
 The provided SQL script facilitates the creation and setup of a fashion trend e-commerce database. It includes the following sections:
@@ -213,6 +223,8 @@ The SQL script contains the following components:
 
 Database and Table Creation: Creates fashion_trend_ecommerce_db and relevant tables such as Users, Wardrobe_Items, Outfits, etc.
 Data Insertion: Inserts sample users, wardrobe items, outfits, weather data, fashion trends, and e-commerce products.
+
+
 
 ## Testing the Database
 
