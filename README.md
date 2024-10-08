@@ -2,7 +2,7 @@
 Trouble picking out fits for the upcoming days? 
 Too much clothes to keep track of?
 Look no further. Our revolutionary app is here to assist you in keeping up with fashion trends and weather.
-Simply upload items in your wardrobe so that we can suggest future outfits for you while providing clothing suggestions to fill in the gaps in your wardrobe.
+Simply upload items in your wardrobe so that we can suggest future outfits based on the weather conditions and the current fashion trend for you while providing clothing suggestions to fill in the gaps in your wardrobe.
 
 ## Features
 - Suggest outfit ideas based on weather
