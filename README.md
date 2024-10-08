@@ -42,6 +42,7 @@ The database consists of the following tables:
    - **Foreign Keys:** 
      - `outfit_id` references `Outfits(outfit_id)`
      - `item_id` references `Wardrobe_Items(item_id)`
+     - Each outfit can include multiple wardrobe items (e.g., a shirt, pants, accessories), and a single wardrobe item can be part of multiple outfits (e.g., a shirt used in both casual and formal outfits). The composite primary key, consisting of outfit_id and item_id, ensures that each outfit can be associated with multiple wardrobe items, while allowing each wardrobe item to belong to multiple outfits.
 
 5. **Weather_Data**
    - Stores weather information for the users’ locations, including temperature, precipitation, wind speed, and humidity.
