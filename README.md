@@ -17,46 +17,6 @@ Simply upload items in your wardrobe so that we can suggest future outfits based
 ## Database Overview
 
 The **LazYdrobe** database is designed to manage user data, wardrobe items, outfit suggestions, weather data, fashion trends, and e-commerce products. The database structure supports efficient retrieval and manipulation of data for various functionalities related to fashion trends and user preferences.
-
-### Database Structure
-
-The database consists of the following tables:
-
-1. **Users**
-   - Stores user information such as username, email, hashed password, location, and preferences.
-   - **Primary Key:** `user_id`
-
-2. **Wardrobe_Items**
-   - Contains information about clothing items owned by users, including type, season, fabric, color, size, tags, and an image URL.
-   - **Primary Key:** `item_id`
-   - **Foreign Key:** `user_id` references `Users(user_id)`
-
-3. **Outfits**
-   - Represents outfit suggestions made to users, including occasion, weather conditions.
-   - **Primary Key:** `outfit_id`
-   - **Foreign Key:** `user_id` references `Users(user_id)`
-
-4. **Outfit_Wardrobe_Items**
-   - A junction table that manages the many-to-many relationship between outfits and wardrobe items.
-   - **Primary Key:** Composite of `outfit_id` and `item_id`
-   - **Foreign Keys:** 
-     - `outfit_id` references `Outfits(outfit_id)`
-     - `item_id` references `Wardrobe_Items(item_id)`
-     - Each outfit can include multiple wardrobe items (e.g., a shirt, pants, accessories), and a single wardrobe item can be part of multiple outfits (e.g., a shirt used in both casual and formal outfits). The composite primary key, consisting of outfit_id and item_id, ensures that each outfit can be associated with multiple wardrobe items, while allowing each wardrobe item to belong to multiple outfits.
-
-5. **Weather_Data**
-   - Stores weather information for the users’ locations, including temperature, precipitation, wind speed, and humidity.
-   - **Primary Key:** `weather_id`
-   - **Foreign Key:** `user_id` references `Users(user_id)`
-
-6. **Fashion_Trends**
-   - Contains information about fashion trends, including title, description, categories, image URL, and source URL.
-   - **Primary Key:** `trend_id`
-
-7. **E_Commerce_Products**
-   - Stores information about e-commerce products recommended to users, including product type, name, price, and image URL.
-   - **Primary Key:** `product_id`
-   - **Foreign Key:** `user_id` references `Users(user_id)`
   
 ## Schema Diagram
 
@@ -182,54 +142,92 @@ Before you set up **LazYdrobe** ensure that you have the following tools install
 
 ## Database Setup and Usage Instructions
 
-The provided SQL script facilitates the creation and setup of a fashion trend e-commerce database. It includes the following sections:
-
-Database Creation: Creates the database if it does not already exist.
-Table Definitions: Defines tables with appropriate fields, data types, and relationships.
-Sample Data Insertion: Inserts sample data into each table to facilitate testing and development.
+### Features of the SQL Script:
+Database Creation: Automatically creates the required tables with appropriate fields and relationships, if they don't already exist.
+Sample Data Insertion: Inserts initial data to simulate a real-world environment, making it easy for developers to test and interact with the system.
+Relationship Management: Defines foreign key constraints to maintain data integrity across multiple related tables.
 
 ### Step 1: Clone the Repository
-Clone this repository or download the source code using the following command:
+First, clone the repository where the SQL script is stored. This will allow you to access the SQL file required to set up the database.
 git clone https://github.com/abd-abdur/LazYdrobe.git
 
 ### Step 2: Navigate to the Project Directory
-Change your current directory to the project directory:
+After cloning the repository, navigate to the directory containing the project.
 cd path/to/LazYdrobe
 
-### Step 3: (Optional) Create a Virtual Environment
-It's recommended to create a virtual environment for this project. 
-You can do this by running: 
+### Step 3: (Optional) Set Up a Virtual Environment
+For Python-based projects, it's recommended to use a virtual environment to isolate project dependencies.
 python -m venv .venv
 
-### Step 4: Install Required Packages
-Install the required packages by running:
+Activate the virtual environment:
+
+On Windows: .\.venv\Scripts\activate
+On macOS/Linux: source .venv/bin/activate
+
+### Step 4: Install Required Dependencies (Optional)
+If your project involves any Python scripts that interact with the database, install the required packages from the requirements.txt file.
 pip install -r requirements.txt
 
-### Step 5: Access the Query Editor
-Launch a MySQL-compatible database management system (e.g., MySQL Workbench, phpMyAdmin, etc.).
-Navigate to the query editor section of your DBMS.
+### Step 5: Launch Your Database Management System (DBMS)
+You need to use a SQL-compatible DBMS like PostgreSQL, MySQL, MariaDB, or similar. Open your DBMS and navigate to the query editor.
 
-### Step 6: Copy the entire SQL script provided in this repository
-Ensure that the SQL file named database_setup.sql is present in the repository. The path should be path/to/LazYdrobe/database_setup.sql.
+Popular choices:
 
-Open your MySQL-compatible database management system (DBMS).
-Navigate to the query editor section of your DBMS.
-Copy the entire SQL script from the database_setup.sql file located in the repository.
-Paste the copied script into the query editor.
-Run the script by clicking the 'Execute' button or using the appropriate command (usually F5 or Ctrl + Enter). This will create the database, define tables, and insert sample data.
+pgAdmin (PostgreSQL): For PostgreSQL databases (what we have chosen!)
+MySQL Workbench: For MySQL databases.
+phpMyAdmin: A web-based tool for managing MySQL databases.
 
-### Sample SQL Script Overview
-The SQL script contains the following components:
+### Step 6: Run the SQL Script to Set Up the Database
+In your DBMS query editor:
 
-Database and Table Creation: Creates fashion_trend_ecommerce_db and relevant tables such as Users, Wardrobe_Items, Outfits, etc.
-Data Insertion: Inserts sample users, wardrobe items, outfits, weather data, fashion trends, and e-commerce products.
+Locate the provided SQL script named database_setup.sql inside the repository: path/to/LazYdrobe/database_setup.sql.
+Copy the entire SQL script content from the database_setup.sql file.
+Paste the copied script into your DBMS query editor.
+Execute the script (usually by pressing F5, Ctrl+Enter, or clicking the Execute button).
+This will create the required tables (such as Users, Wardrobe_Items, Outfits, etc.), set up relationships between them, and insert sample data for testing.
 
+## Database Structure and Key Components
 
+### 1. Users Table
+Purpose: Stores basic information about each user.
+Key Fields: user_id, username, email, password_hash, location, preferences, date_joined.
+Primary Key: user_id (auto-incremented for uniqueness).
+Unique Constraints: email must be unique.
+### 2. Wardrobe_Items Table
+Purpose: Stores information about wardrobe items owned by users.
+Key Fields: item_id, user_id, type, season, fabric, color, size, tags, image_url, date_added.
+Foreign Key: user_id references Users(user_id), ensuring each wardrobe item belongs to a valid user.
+Relationships: If a user is deleted, their wardrobe items are also deleted (ON DELETE CASCADE).
+### 3. Outfits Table
+Purpose: Stores outfits that are suggested or created for different occasions.
+Key Fields: outfit_id, user_id, occasion, weather_condition, trend_score, date_suggested.
+Foreign Key: user_id references Users(user_id).
+### 4. Outfit_Wardrobe_Items Table
+Purpose: A junction table that links outfits to specific wardrobe items (many-to-many relationships).
+Key Fields: outfit_id, item_id (composite primary key).
+Foreign Keys: Links outfit_id to Outfits(outfit_id) and item_id to Wardrobe_Items(item_id).
+### 5. Weather_Data Table
+Purpose: Stores weather conditions relevant to a user's location.
+Key Fields: weather_id, user_id, location, temperature, precipitation, wind_speed, humidity, date_fetched.
+Foreign Key: user_id references Users(user_id).
+### 6. Fashion_Trends Table
+Purpose: Stores information about fashion trends, including categories and source URLs.
+Key Fields: trend_id, title, description, categories, image_url, date_fetched, source_url.
+### 7. E_Commerce_Products Table
+Purpose: Stores product suggestions related to wardrobe items, linked to e-commerce platforms.
+Key Fields: product_id, user_id, suggested_item_type, product_name, price, product_url, image_url, date_suggested.
+Foreign Key: user_id references Users(user_id).
 
 ## Testing the Database
+Once the tables are set up and sample data is inserted, you can begin testing the database.
 
-After the database and tables are set up:
+1. Run Queries: You can run SELECT statements on each table to view the data, ensuring everything has been created correctly.
+SELECT * FROM Users;
+SELECT * FROM Wardrobe_Items;
+SELECT * FROM Outfits;
+2. Modify Sample Data: You can modify, delete, or add new entries to test different aspects of the database, such as the relationships between users and their wardrobe items.
+3. Check Data Integrity: Try deleting a user and see how it cascades down to related records in other tables (e.g., their wardrobe items should be deleted).
 
-- You can run SQL queries to test and retrieve data.
-- Feel free to modify the sample data as needed for further testing.
+## Conclusion
+The provided SQL script sets up a fully functional database for a fashion e-commerce platform, complete with relationships, foreign keys, and sample data. By following the steps outlined above, you can install, test, and modify the database to suit your needs. This setup is ideal for developers looking to simulate and test features related to user fashion profiles, weather-based outfit suggestions, and e-commerce product recommendations.
 
