@@ -199,9 +199,13 @@ Launch a MySQL-compatible database management system (e.g., MySQL Workbench, php
 Navigate to the query editor section of your DBMS.
 
 ### Step 6: Copy the entire SQL script provided in this repository
+Ensure that the SQL file named database_setup.sql is present in the repository. The path should be path/to/LazYdrobe/database_setup.sql.
+
+Open your MySQL-compatible database management system (DBMS).
+Navigate to the query editor section of your DBMS.
+Copy the entire SQL script from the database_setup.sql file located in the repository.
 Paste the copied script into the query editor.
-Run the script by clicking the 'Execute' button or using the appropriate command (usually F5 or Ctrl + Enter).
-This will create the database, define tables, and insert sample data.
+Run the script by clicking the 'Execute' button or using the appropriate command (usually F5 or Ctrl + Enter). This will create the database, define tables, and insert sample data.
 
 ### Sample SQL Script Overview
 The SQL script contains the following components:
