@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS Users (
     username VARCHAR(255) NOT NULL,            -- Username
     email VARCHAR(255) UNIQUE NOT NULL,        -- Unique email address
     password_hash VARCHAR(255) NOT NULL,       -- Hashed password for security
-    location VARCHAR(255),                     -- Location (city, country)
-    preferences JSON,                          -- User preferences stored as JSON
+    location VARCHAR(255),                      -- Location (city, country)
+    preferences JSON,                           -- User preferences stored as JSON
     date_joined DATETIME DEFAULT CURRENT_TIMESTAMP -- Auto timestamp when user joins
 );
 
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS Weather_Data (
     weather_id INT PRIMARY KEY AUTO_INCREMENT,  -- Unique weather record ID
     user_id INT NOT NULL,                       -- Foreign key to Users table
     location VARCHAR(255) NOT NULL,             -- Location (city, country)
-    temperature DECIMAL(5, 2),                  -- Temperature in °C or °F
+    temperature DECIMAL(5, 2),                  -- Temperature in Celsius or Fahrenheit
     precipitation DECIMAL(5, 2),                -- Precipitation in mm
     wind_speed DECIMAL(5, 2),                   -- Wind speed in km/h or mph
     humidity DECIMAL(5, 2),                     -- Humidity percentage
