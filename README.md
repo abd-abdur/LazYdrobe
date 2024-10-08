@@ -127,11 +127,6 @@ Stores fashion trend data that helps inform outfit recommendations.
 
 ## Setup Instructions
 
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/your-team/lazydrobe.git
-   cd lazydrobe
-
 ## Prerequisites
 - Python 3.11 or higher
 - pip (Python package manager)
