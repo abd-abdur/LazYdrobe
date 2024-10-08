@@ -1,132 +1,130 @@
--- Creating the database and selecting it
+-- Step 1: Create and select the database
 CREATE DATABASE IF NOT EXISTS fashion_trend_ecommerce_db;
 USE fashion_trend_ecommerce_db;
 
--- Script for Fashion Trends, E-Commerce Products, and other key entities (Users, Wardrobe, Outfits, Weather Data)
-
--- TABLE: Users
+-- Step 2: Create the Users table
 CREATE TABLE IF NOT EXISTS Users (
-    user_id INT PRIMARY KEY AUTO_INCREMENT,  -- Unique ID for each user
-    username VARCHAR(255) NOT NULL,          -- username
-    email VARCHAR(255) UNIQUE NOT NULL,      -- Email address
-    password_hash VARCHAR(255) NOT NULL,     -- Hashed password
-    location VARCHAR(255),                   -- User's location
-    preferences TEXT,                        -- User's preferences, stored as JSON or TEXT
-    date_joined DATETIME                     -- Date when the user joined
+    user_id INT PRIMARY KEY AUTO_INCREMENT,    -- Unique ID for each user
+    username VARCHAR(255) NOT NULL,            -- Username
+    email VARCHAR(255) UNIQUE NOT NULL,        -- Unique email address
+    password_hash VARCHAR(255) NOT NULL,       -- Hashed password for security
+    location VARCHAR(255),                     -- Location (city, country)
+    preferences JSON,                          -- User preferences stored as JSON
+    date_joined DATETIME DEFAULT CURRENT_TIMESTAMP -- Auto timestamp when user joins
 );
 
--- TABLE: Wardrobe Items
+-- Step 3: Create the Wardrobe_Items table
 CREATE TABLE IF NOT EXISTS Wardrobe_Items (
-    item_id INT PRIMARY KEY AUTO_INCREMENT,  -- Unique ID for each wardrobe item
-    user_id INT,                             -- Foreign key referencing Users
-    type VARCHAR(255) NOT NULL,              -- Type of clothing (e.g., shirt, pants)
-    season VARCHAR(255),                     -- Season (e.g., summer, winter)
-    fabric VARCHAR(255),                     -- Fabric type
-    color VARCHAR(255),                      -- Color of the item
-    size VARCHAR(255),                       -- Size of the item
-    tags TEXT,                               -- Tags (e.g., casual, formal)
-    image_url VARCHAR(255),                  -- URL to the item's image
-    date_added DATETIME,                     -- Date when the item was added
-    CONSTRAINT fk_user_wardrobe FOREIGN KEY (user_id) -- Foreign key linking to Users
+    item_id INT PRIMARY KEY AUTO_INCREMENT,    -- Unique ID for each wardrobe item
+    user_id INT NOT NULL,                      -- Foreign key to Users table
+    type VARCHAR(255) NOT NULL,                -- Type of clothing (e.g., shirt, pants)
+    season VARCHAR(255),                       -- Associated season (e.g., summer, winter)
+    fabric VARCHAR(255),                       -- Fabric type (e.g., cotton, wool)
+    color VARCHAR(255),                        -- Item color (e.g., red, blue)
+    size VARCHAR(50),                          -- Size of the item (e.g., M, L, 32)
+    tags JSON,                                 -- Tags to categorize items (stored as JSON)
+    image_url VARCHAR(255),                    -- URL to the image of the item
+    date_added DATETIME DEFAULT CURRENT_TIMESTAMP, -- Auto timestamp when item is added
+    CONSTRAINT fk_user_wardrobe FOREIGN KEY (user_id) -- Foreign key reference to Users
         REFERENCES Users(user_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
 
--- TABLE: Outfits
+-- Step 4: Create the Outfits table
 CREATE TABLE IF NOT EXISTS Outfits (
-    outfit_id INT PRIMARY KEY AUTO_INCREMENT, -- Unique ID for each outfit
-    user_id INT,                              -- Foreign key referencing Users
-    occasion VARCHAR(255),                    -- Occasion (e.g., casual, formal)
-    weather_condition VARCHAR(255),           -- Weather condition for the outfit
-    trend_score DECIMAL(3, 2),                -- Trend score for the outfit
-    date_suggested DATETIME,                  -- Date when the outfit was suggested
-    CONSTRAINT fk_user_outfit FOREIGN KEY (user_id) -- Foreign key linking to Users
+    outfit_id INT PRIMARY KEY AUTO_INCREMENT,  -- Unique ID for each outfit
+    user_id INT NOT NULL,                      -- Foreign key to Users table
+    occasion VARCHAR(255),                     -- Occasion (e.g., casual, formal)
+    weather_condition VARCHAR(255),            -- Weather condition when the outfit is suggested
+    trend_score DECIMAL(3, 2),                 -- Trend score (0.00 - 10.00 scale)
+    date_suggested DATETIME DEFAULT CURRENT_TIMESTAMP, -- Auto timestamp when outfit is suggested
+    CONSTRAINT fk_user_outfit FOREIGN KEY (user_id) -- Foreign key reference to Users
         REFERENCES Users(user_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
 
--- TABLE: Outfit_Wardrobe_Items (Junction table for outfits and wardrobe items)
+-- Step 5: Create a junction table Outfit_Wardrobe_Items for many-to-many relationships
 CREATE TABLE IF NOT EXISTS Outfit_Wardrobe_Items (
-    outfit_id INT,                             -- Foreign key referencing Outfits
-    item_id INT,                               -- Foreign key referencing Wardrobe Items
-    PRIMARY KEY (outfit_id, item_id),          -- Composite primary key (outfit_id, item_id)
-    CONSTRAINT fk_outfit FOREIGN KEY (outfit_id) -- Foreign key linking to Outfits
+    outfit_id INT NOT NULL,                    -- Foreign key to Outfits
+    item_id INT NOT NULL,                      -- Foreign key to Wardrobe_Items
+    PRIMARY KEY (outfit_id, item_id),          -- Composite primary key
+    CONSTRAINT fk_outfit FOREIGN KEY (outfit_id) -- Foreign key to Outfits table
         REFERENCES Outfits(outfit_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
-    CONSTRAINT fk_wardrobe_item FOREIGN KEY (item_id) -- Foreign key linking to Wardrobe Items
+    CONSTRAINT fk_wardrobe_item FOREIGN KEY (item_id) -- Foreign key to Wardrobe_Items table
         REFERENCES Wardrobe_Items(item_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
 
--- TABLE: Weather Data
+-- Step 6: Create the Weather_Data table
 CREATE TABLE IF NOT EXISTS Weather_Data (
-    weather_id INT PRIMARY KEY AUTO_INCREMENT,  -- Unique weather ID
-    user_id INT,                                -- Foreign key referencing Users
-    location VARCHAR(255),                      -- Location
-    temperature DECIMAL(5, 2),                  -- Temperature in Celsius or Fahrenheit
+    weather_id INT PRIMARY KEY AUTO_INCREMENT,  -- Unique weather record ID
+    user_id INT NOT NULL,                       -- Foreign key to Users table
+    location VARCHAR(255) NOT NULL,             -- Location (city, country)
+    temperature DECIMAL(5, 2),                  -- Temperature in °C or °F
     precipitation DECIMAL(5, 2),                -- Precipitation in mm
     wind_speed DECIMAL(5, 2),                   -- Wind speed in km/h or mph
     humidity DECIMAL(5, 2),                     -- Humidity percentage
-    date_fetched DATETIME,                      -- Date when weather data was fetched
-    CONSTRAINT fk_user_weather FOREIGN KEY (user_id) -- Foreign key linking to Users
+    date_fetched DATETIME DEFAULT CURRENT_TIMESTAMP, -- Auto timestamp for data fetch
+    CONSTRAINT fk_user_weather FOREIGN KEY (user_id) -- Foreign key reference to Users
         REFERENCES Users(user_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
 
--- TABLE: Fashion Trends
+-- Step 7: Create the Fashion_Trends table
 CREATE TABLE IF NOT EXISTS Fashion_Trends (
-    trend_id INT PRIMARY KEY AUTO_INCREMENT,    -- Unique ID for each fashion trend
+    trend_id INT PRIMARY KEY AUTO_INCREMENT,    -- Unique ID for each trend
     title VARCHAR(255) NOT NULL,                -- Trend title
-    description TEXT,                           -- Trend description
-    categories VARCHAR(255),                    -- Categories for the trend (comma-separated)
-    image_url VARCHAR(255),                     -- URL to the trend's image
-    date_fetched DATETIME,                      -- Date when the trend data was fetched
-    source_url VARCHAR(255)                     -- Source URL from where the trend data was fetched
+    description TEXT,                           -- Detailed description of the trend
+    categories VARCHAR(255),                    -- Trend categories (comma-separated)
+    image_url VARCHAR(255),                     -- URL to an image representing the trend
+    date_fetched DATETIME DEFAULT CURRENT_TIMESTAMP, -- Auto timestamp for when trend was fetched
+    source_url VARCHAR(255)                     -- Source URL from where the trend was fetched
 );
 
--- TABLE: E-Commerce Products
+-- Step 8: Create the E_Commerce_Products table
 CREATE TABLE IF NOT EXISTS E_Commerce_Products (
     product_id INT PRIMARY KEY AUTO_INCREMENT,  -- Unique product ID
-    user_id INT,                                -- Foreign key referencing the user
+    user_id INT NOT NULL,                       -- Foreign key to Users table
     suggested_item_type VARCHAR(255),           -- Suggested item type (e.g., shirt, shoes)
     product_name VARCHAR(255) NOT NULL,         -- Product name
-    price DECIMAL(10, 2),                       -- Price of the product
-    product_url VARCHAR(255),                   -- URL to the product
+    price DECIMAL(10, 2),                       -- Product price
+    product_url VARCHAR(255),                   -- URL to the product on the e-commerce platform
     image_url VARCHAR(255),                     -- URL to the product image
-    date_suggested DATETIME,                    -- Date when the product was suggested
-    CONSTRAINT fk_user_ecommerce FOREIGN KEY (user_id) -- Foreign key linking to Users
+    date_suggested DATETIME DEFAULT CURRENT_TIMESTAMP, -- Auto timestamp when product is suggested
+    CONSTRAINT fk_user_ecommerce FOREIGN KEY (user_id) -- Foreign key reference to Users
         REFERENCES Users(user_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
 
--- Sample Data Population
+-- Step 9: Sample Data Insertion
 
 -- Insert sample users
-INSERT INTO Users (username, email, password_hash, location, preferences, date_joined)
+INSERT INTO Users (username, email, password_hash, location, preferences)
 VALUES 
-('john_doe', 'john@example.com', 'hashed_password_1', 'New York', '{"style": "casual"}', NOW()),
-('jane_smith', 'jane@example.com', 'hashed_password_2', 'Los Angeles', '{"style": "formal"}', NOW());
+('a', 'user_a@example.com', 'hashed_password_a', 'NY, USA', JSON_ARRAY('Black')),
+('b', 'user_b@example.com', 'hashed_password_b', 'London, UK', JSON_ARRAY('Long coat'));
 
 -- Insert sample wardrobe items
-INSERT INTO Wardrobe_Items (user_id, type, season, fabric, color, size, tags, image_url, date_added)
+INSERT INTO Wardrobe_Items (user_id, type, season, fabric, color, size, tags, image_url)
 VALUES 
-(1, 'T-shirt', 'summer', 'cotton', 'blue', 'M', 'casual, light', 'http://example.com/tshirt.jpg', NOW()),
-(1, 'Jeans', 'all_season', 'denim', 'black', '32', 'casual', 'http://example.com/jeans.jpg', NOW()),
-(2, 'Dress', 'summer', 'silk', 'red', 'M', 'formal, evening', 'http://example.com/dress.jpg', NOW());
+(1, 'T-shirt', 'summer', 'cotton', 'blue', 'M', JSON_ARRAY('casual', 'light'), 'http://example.com/tshirt.jpg'),
+(1, 'Jeans', 'all_season', 'denim', 'black', '32', JSON_ARRAY('casual'), 'http://example.com/jeans.jpg'),
+(2, 'Dress', 'summer', 'silk', 'red', 'M', JSON_ARRAY('formal', 'evening'), 'http://example.com/dress.jpg');
 
 -- Insert sample outfits
-INSERT INTO Outfits (user_id, occasion, weather_condition, trend_score, date_suggested)
+INSERT INTO Outfits (user_id, occasion, weather_condition, trend_score)
 VALUES 
-(1, 'casual', 'sunny', 7.5, NOW()),
-(2, 'formal', 'cloudy', 8.0, NOW());
+(1, 'casual', 'sunny', 7.5),
+(2, 'formal', 'cloudy', 8.0);
 
--- Insert sample outfit-wardrobe items (junction table)
+-- Insert sample data into Outfit_Wardrobe_Items (junction table)
 INSERT INTO Outfit_Wardrobe_Items (outfit_id, item_id)
 VALUES 
 (1, 1),
@@ -134,19 +132,21 @@ VALUES
 (2, 3);
 
 -- Insert sample weather data
-INSERT INTO Weather_Data (user_id, location, temperature, precipitation, wind_speed, humidity, date_fetched)
+INSERT INTO Weather_Data (user_id, location, temperature, precipitation, wind_speed, humidity)
 VALUES 
-(1, 'New York', 25.5, 0.0, 5.2, 60.0, NOW()),
-(2, 'Los Angeles', 22.3, 0.0, 3.4, 50.0, NOW());
+(1, 'London, UK', 63.1, 0.11, 12.1, 85),
+(2, 'London, UK', 61.8, 0.01, 8.9, 80.4);
 
 -- Insert sample fashion trends
-INSERT INTO Fashion_Trends (title, description, categories, image_url, date_fetched, source_url)
+INSERT INTO Fashion_Trends (title, description, categories, image_url, source_url)
 VALUES 
-('Summer Florals', 'Floral patterns are in this summer.', 'summer, floral', 'http://example.com/florals.jpg', NOW(), 'http://fashionwebsite.com/floral-trend'),
-('Bold Colors', 'Bright, bold colors are trending this season.', 'bold, colors', 'http://example.com/colors.jpg', NOW(), 'http://fashionwebsite.com/bold-colors');
+('Country house chic', 'Fall’s most alluring trend... English countryside.', 'fall', 'https://media.glamour.com/photos/66ccdbd14397358d42cb7841/master/w_1600,c_limit/fall%20fashion%20trends%20%E2%80%94%20country%20house%20chic.png', 'http://glamour.com/country-house-chic'),
+('Boho 3.0', 'Shabby chic! While the word boho... feel fresher.', 'fall', 'https://media.glamour.com/photos/66ccdc324397358d42cb7843/master/w_1600,c_limit/fall%20fashion%20trends%20%E2%80%94%20boho.png', 'http://glamour.com/boho-3.0');
 
 -- Insert sample e-commerce products
-INSERT INTO E_Commerce_Products (user_id, suggested_item_type, product_name, price, product_url, image_url, date_suggested)
+INSERT INTO E_Commerce_Products (user_id, suggested_item_type, product_name, price, product_url, image_url)
 VALUES 
-(1, 'shirt', 'Blue Casual Shirt', 25.99, 'http://ecommerce.com/product/blue-shirt', 'http://example.com/blue-shirt.jpg', NOW()),
-(2, 'dress', 'Elegant Red Dress', 79.99, 'http://ecommerce.com/product/red-dress', 'http://example.com/red-dress.jpg', NOW());
+(1, 'Jacket', 'Classic Leather Biker Jacket', 199.99, 'https://www.ebay.com/itm/Classic-Leather-Biker-Jacket-64b1f1a2e3f4a5b6c7d8e900', 'https://i.ebayimg.com/images/g/Leather-Biker-Jacket.jpg'),
+(2, 'Boots', 'Waterproof Ankle Boots', 89.99, 'https://www.ebay.com/itm/Waterproof-Ankle-Boots-abc123', 'https://i.ebayimg.com/images/g/Waterproof-Ankle-Boots.jpg'),
+(1, 'Shirt', 'Casual White Shirt', 29.99, 'https://www.ebay.com/itm/Casual-White-Shirt-xyz789', 'https://i.ebayimg.com/images/g/Casual-White-Shirt.jpg'),
+(2, 'Dress', 'Summer Floral Dress', 49.99, 'https://www.ebay.com/itm/Summer-Floral-Dress-456xyz', 'https://i.ebayimg.com/images/g/Summer-Floral-Dress.jpg');
