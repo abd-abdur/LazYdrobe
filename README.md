@@ -1,37 +1,142 @@
 # LazYdrobe
-Trouble picking out fits for the upcoming days? 
-Too much clothes to keep track of?
-Look no further. Our revolutionary app is here to assist you in keeping up with fashion trends and weather.
-Simply upload items in your wardrobe so that we can suggest future outfits based on the weather conditions and the current fashion trend for you while providing clothing suggestions to fill in the gaps in your wardrobe.
+
+Trouble picking out fits for the upcoming days?  
+Too much clothes to keep track of?  
+Look no further. Our revolutionary app is here to assist you in keeping up with fashion trends and weather.  
+Simply upload items in your wardrobe so that we can suggest future outfits based on the weather conditions and the current fashion trend for you, while providing clothing suggestions to fill in the gaps in your wardrobe.
 
 ## Features
-- Suggest outfit ideas based on weather and fashion trend
-- Suggest clothing pieces to purchase that is not in wardrobe
+
+- **Wardrobe Management**: Users can upload and manage their wardrobe by categorizing items like tops, bottoms, shoes, and accessories.
+- **Outfit Suggestions**: Generate personalized outfit recommendations based on the weather, current fashion trends, and user preferences.
+- **Weather Integration**: Provides weather-appropriate outfit suggestions based on current and forecasted weather conditions.
+- **Fashion Trends**: Keeps users updated with the latest fashion trends ensuring their wardrobe stays trendy.
+- **Gap Filling**: Recommends additional clothing items to complete outfits and fill gaps in the user’s wardrobe.
+- **E-commerce Integration**: Suggests products from online stores based on wardrobe gaps to help users shop for missing pieces.
+
+## Schema Diagram
+
+![LazYdrobe Schema](schema.png)
+
+## Data Model Description
+
+The **LazYdrobe** database is designed using a **SQL relational model**. Below are the key entities and relationships in the system:
+
+### **1. Users**
+Stores user information, including preferences and their wardrobe.
+
+- **Attributes**:
+  - `user_id` (Primary Key): Unique identifier for each user.
+  - `username`: User's display name.
+  - `email`: User's email address.
+  - `password`: Hashed password for user authentication.
+  - `location`: User's location for weather-based outfit suggestions.
+  - `preferences`: List of fashion styles preferred by the user.
+  - `date_joined`: Date the user registered on the app.
+
+### **2. Clothing**
+Represents individual clothing items uploaded by a user which can be connected to an e-commerce product.
+
+- **Attributes**:
+  - `item_id` (Primary Key): Unique identifier for each clothing item.
+  - `user_id` (Foreign Key): Links to the `Users` table.
+  - `product_id` (Foreign Key): Links to the `eCommerceProduct` table if the item corresponds to a purchasable product.
+  - `type`: Type of clothing (e.g., jacket, pants).
+  - `for_weather`: Suitable weather for the clothing item.
+  - `color` (array): List of colors for the item.
+  - `size`: Size of the clothing item.
+  - `tags` (array): Tags related to the clothing item.
+  - `image_url`: URL for the image of the clothing.
+  - `date_added`: Date the item was added to the wardrobe.
+
+### **3. eCommerceProduct**
+Represents clothing items that can be purchased online, recommended to users based on wardrobe gaps.
+
+- **Attributes**:
+  - `product_id` (Primary Key): Unique identifier for the product.
+  - `product_name`: Name of the product.
+  - `suggested_item_type`: Type of item the product suggests (e.g., outerwear, footwear).
+  - `price`: Price of the product.
+  - `product_url`: URL to the product page for purchase.
+  - `image_url`: URL for the product's image.
+  - `date_suggested`: Date when the product was suggested to a user.
+
+### **4. WeatherData**
+Stores weather data relevant to a user's location for making weather-appropriate outfit suggestions.
+
+- **Attributes**:
+  - `date` (Primary Key): Date when the weather data was recorded.
+  - `location`: The location for which the weather data applies.
+  - `temp_max`: Maximum temperature.
+  - `temp_min`: Minimum temperature.
+  - `feels_max`: Feels-like maximum temperature.
+  - `feels_min`: Feels-like minimum temperature.
+  - `wind_speed`: Wind speed.
+  - `humidity`: Humidity percentage.
+  - `precipitation`: Amount of precipitation.
+  - `precipitation_probability`: Probability of precipitation.
+  - `special_condition`: Description of any special weather conditions (e.g., snow, thunderstorms).
+
+### **5. Outfit**
+Stores information about generated outfit suggestions based on user wardrobe, weather, and trends.
+
+- **Attributes**:
+  - `outfit_id` (Primary Key): Unique identifier for the outfit.
+  - `clothings` (array): Array of clothing item IDs that make up the outfit.
+  - `occasion` (array): Occasions the outfit is suitable for.
+  - `for_weather`: Weather conditions the outfit is appropriate for.
+  - `date_suggested`: Date when the outfit was suggested to the user.
+  - `source_url`: URL where the outfit inspiration came from.
+
+### **6. Fashion**
+Stores fashion trend data that helps inform outfit recommendations.
+
+- **Attributes**:
+  - `trend_id` (Primary Key): Unique identifier for each trend.
+  - `trend_names`: Name of the fashion trend.
+  - `description`: Description of the trend.
+  - `temperature`: Weather conditions that fit the trend.
+  - `occasion`: Occasions or events where the trend is suitable.
+  - `image_url`: URL to an image showcasing the trend.
+  - `example_fits` (array): Example outfits that fit the trend.
+
+### **Relationships**
+- **User** to **Clothing**: One-to-Many (a user can have multiple clothing items in their wardrobe).
+- **Clothing** to **eCommerceProduct**: One-to-One (a clothing item may have a related e-commerce product).
+- **Outfit** to **Clothing**: One-to-Many (an outfit consists of multiple wardrobe items).
+- **Outfit** to **WeatherData**: One-to-One (outfits are suggested based on specific weather conditions).
+- **Outfit** to **Fashion**: Many-to-One (outfits may follow a specific fashion trend).
+- **WeatherData** to **Outfit**: Many-to-One (outfit suggestions are influenced by weather data).
+
+### Why We Chose SQL for LazYdrobe
+
+1. **Structured Data and Relationships**  
+   LazYdrobe handles well-defined entities like Users, Wardrobe Items, Outfits, and Weather Data, all with clear relationships. SQL's use of primary and foreign keys helps enforce these connections efficiently ensuring data integrity.
+
+2. **Data Integrity and Consistency**  
+   SQL provides ACID properties (Atomicity, Consistency, Isolation, Durability) to maintain strong data integrity. This ensures that operations like adding wardrobe items or generating outfit suggestions are reliable and consistent.
+
+3. **Complex Queries**  
+   Generating outfit suggestions requires complex joins between multiple tables (e.g., Users, WardrobeItems, WeatherData). SQL excels at handling such joins and aggregations making it ideal for our application's data retrieval needs.
+
+4. **Scalability**  
+   Modern SQL databases support scalability through partitioning and indexing making them capable of handling larger datasets as the app grows.
+
+5. **Data Consistency Over Flexibility**  
+   LazYdrobe benefits from the structured schema enforcement SQL provides. While NoSQL offers flexibility, SQL's consistency ensures that wardrobe items, trends, and weather data are always valid and related correctly.
+
+## Setup Instructions
+
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/your-team/lazydrobe.git
+   cd lazydrobe
 
 ## Prerequisites
 - Python 3.11 or higher
 - pip (Python package manager)
 - MySQL server
 
-## Why SQL
-We chose to use SQL for our project because: 
-- The information that we are handling generally all follow a structured format
-- There are clear relationships between our data tables
-
-## Our data model
-1. users
-   Stores user specific information
-2. clothing
-   Stores individual clothing pieces as its own object
-4. fashion
-   Stores fashion trend data
-6. weatherData
-   Stores weather information for a location
-8. outfit
-   Stores outfits by pairing up clothing pieces and fashion trend
-10. eCommerceProduct
-    Stores information on clothing items available for purchase from online
- 
 # Setup
 1. Clone this repository or download the source code. `git clone https://github.com/abd-abdur/LazYdrobe.git`
 2. Navigate to the project directory:
