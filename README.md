@@ -14,6 +14,49 @@ Simply upload items in your wardrobe so that we can suggest future outfits based
 - **Gap Filling**: Recommends additional clothing items to complete outfits and fill gaps in the user’s wardrobe.
 - **E-commerce Integration**: Suggests products from online stores based on wardrobe gaps to help users shop for missing pieces.
 
+## Database Overview
+
+The **LazYdrobe** database is designed to manage user data, wardrobe items, outfit suggestions, weather data, fashion trends, and e-commerce products. The database structure supports efficient retrieval and manipulation of data for various functionalities related to fashion trends and user preferences.
+
+### Database Structure
+
+The database consists of the following tables:
+
+1. **Users**
+   - Stores user information such as username, email, hashed password, location, and preferences.
+   - **Primary Key:** `user_id`
+
+2. **Wardrobe_Items**
+   - Contains information about clothing items owned by users, including type, season, fabric, color, size, tags, and an image URL.
+   - **Primary Key:** `item_id`
+   - **Foreign Key:** `user_id` references `Users(user_id)`
+
+3. **Outfits**
+   - Represents outfit suggestions made to users, including occasion, weather conditions, and trend score.
+   - **Primary Key:** `outfit_id`
+   - **Foreign Key:** `user_id` references `Users(user_id)`
+
+4. **Outfit_Wardrobe_Items**
+   - A junction table that manages the many-to-many relationship between outfits and wardrobe items.
+   - **Primary Key:** Composite of `outfit_id` and `item_id`
+   - **Foreign Keys:** 
+     - `outfit_id` references `Outfits(outfit_id)`
+     - `item_id` references `Wardrobe_Items(item_id)`
+
+5. **Weather_Data**
+   - Stores weather information for the users’ locations, including temperature, precipitation, wind speed, and humidity.
+   - **Primary Key:** `weather_id`
+   - **Foreign Key:** `user_id` references `Users(user_id)`
+
+6. **Fashion_Trends**
+   - Contains information about fashion trends, including title, description, categories, image URL, and source URL.
+   - **Primary Key:** `trend_id`
+
+7. **E_Commerce_Products**
+   - Stores information about e-commerce products recommended to users, including product type, name, price, and image URL.
+   - **Primary Key:** `product_id`
+   - **Foreign Key:** `user_id` references `Users(user_id)`
+
 ## Schema Diagram
 
 ![LazYdrobe Schema](schema.png)
@@ -107,6 +150,7 @@ Stores fashion trend data that helps inform outfit recommendations.
 - **Outfit** to **WeatherData**: One-to-One (outfits are suggested based on specific weather conditions).
 - **Outfit** to **Fashion**: Many-to-One (outfits may follow a specific fashion trend).
 - **WeatherData** to **Outfit**: Many-to-One (outfit suggestions are influenced by weather data).
+
 
 ### Why We Chose SQL for LazYdrobe
 
