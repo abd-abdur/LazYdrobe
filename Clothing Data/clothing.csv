@@ -1,0 +1,3 @@
+item_id,user_id,product_id,type,for_weather,color,size,tags,image_url,date_added
+1,1,64b1f1a2e3f4a5b6c7d8e900,Jacket,Chilly,[Dark Brown],L,"[Leather, Biker]",https://i.ebayimg.com/images/g/Leather-Biker-Jacket.jpg,2024-10-01T10:30:00Z
+2,2,64b1f1a2e3f4a5b6c7d8e901,Shoes,Rainy,[Black],US 7,"[Rain, Ankle boots]",https://i.ebayimg.com/images/g/Waterproof-Ankle-Boots.jpg,2024-10-02T11:00:00Z
