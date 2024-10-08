@@ -56,6 +56,26 @@ The database consists of the following tables:
    - Stores information about e-commerce products recommended to users, including product type, name, price, and image URL.
    - **Primary Key:** `product_id`
    - **Foreign Key:** `user_id` references `Users(user_id)`
+  
+SQL Scripts
+The provided SQL script includes the following sections:
+
+Database Creation: Creates the database if it does not exist.
+Table Definitions: Creates tables with appropriate fields, data types, and relationships.
+Sample Data Insertion: Inserts sample data into each table to facilitate testing and development.
+Usage
+Set Up the Database:
+
+Run the SQL script in a MySQL-compatible database management system.
+Ensure that the database server is running.
+Testing:
+
+After creating the database and tables, you can use SQL queries to test and retrieve data.
+You can modify the sample data as needed for further testing.
+Requirements
+MySQL or any compatible relational database management system.
+Basic knowledge of SQL to interact with the database.
+
 
 ## Schema Diagram
 
