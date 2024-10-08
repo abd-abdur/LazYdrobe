@@ -57,7 +57,7 @@ We chose to use SQL for our project because:
    ```
    visualcrossing_API_KEY=your_key_here
    ```
-   Replace `your_key_here` with your visualcrossing connection string from [Visual Crossing] (https://www.visualcrossing.com/)
+   Replace `your_key_here` with your visualcrossing connection string from [Visual Crossing](https://www.visualcrossing.com/)
 
 ## Usage
 To run the application:
