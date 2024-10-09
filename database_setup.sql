@@ -1,3 +1,4 @@
+-- DELETE statements to clear any existing data from tables
 DELETE FROM Users;
 DELETE FROM Wardrobe_Items;
 DELETE FROM Outfits;
@@ -5,6 +6,7 @@ DELETE FROM Outfit_Wardrobe_Items;
 DELETE FROM Weather_Data;
 DELETE FROM Fashion_Trends;
 DELETE FROM E_Commerce_Products;
+
 ----------------------------------------
 
 -- Create the Users table
@@ -20,6 +22,7 @@ CREATE TABLE IF NOT EXISTS Users (
 
 -- Output: Check if the Users table is created (structure)
 SELECT * FROM Users LIMIT 0;
+
 ----------------------------------------------------------------
 -- Create the Wardrobe_Items table
 CREATE TABLE IF NOT EXISTS Wardrobe_Items (
@@ -41,6 +44,7 @@ CREATE TABLE IF NOT EXISTS Wardrobe_Items (
 
 -- Output: Check if the Wardrobe_Items table is created (structure)
 SELECT * FROM Wardrobe_Items LIMIT 0;
+
 ------------------------------------------------------------------------
 -- Create the Outfits table
 CREATE TABLE IF NOT EXISTS Outfits (
@@ -58,6 +62,7 @@ CREATE TABLE IF NOT EXISTS Outfits (
 
 -- Output: Check if the Outfits table is created (structure)
 SELECT * FROM Outfits LIMIT 0;
+
 -----------------------------------------------------------------------
 -- Create the Outfit_Wardrobe_Items table (many-to-many relationship)
 CREATE TABLE IF NOT EXISTS Outfit_Wardrobe_Items (
@@ -76,6 +81,7 @@ CREATE TABLE IF NOT EXISTS Outfit_Wardrobe_Items (
 
 -- Output: Check if the Outfit_Wardrobe_Items table is created (structure)
 SELECT * FROM Outfit_Wardrobe_Items LIMIT 0;
+
 -------------------------------------------------------------------------------------
 -- Create the Weather_Data table
 CREATE TABLE IF NOT EXISTS Weather_Data (
@@ -95,6 +101,7 @@ CREATE TABLE IF NOT EXISTS Weather_Data (
 
 -- Output: Check if the Weather_Data table is created (structure)
 SELECT * FROM Weather_Data LIMIT 0;
+
 ----------------------------------------------------------------------------
 -- Create the Fashion_Trends table
 CREATE TABLE IF NOT EXISTS Fashion_Trends (
@@ -109,6 +116,7 @@ CREATE TABLE IF NOT EXISTS Fashion_Trends (
 
 -- Output: Check if the Fashion_Trends table is created (structure)
 SELECT * FROM Fashion_Trends LIMIT 0;
+
 ---------------------------------------------------------------------------
 -- Create the E_Commerce_Products table
 CREATE TABLE IF NOT EXISTS E_Commerce_Products (
@@ -128,104 +136,77 @@ CREATE TABLE IF NOT EXISTS E_Commerce_Products (
 
 -- Output: Check if the E_Commerce_Products table is created (structure)
 SELECT * FROM E_Commerce_Products LIMIT 0;
-------------------------------------------------------------------------------------------------
--- Insert sample users if they don't already exist
-INSERT INTO Users (username, email, password_hash, location, preferences)
-SELECT 'a', 'user_a@example.com', 'hashed_password_a', 'NY, USA', '["Black"]'
-WHERE NOT EXISTS (
-    SELECT 1 FROM Users WHERE email = 'user_a@example.com'
-);
 
+------------------------------------------------------------------------------------------------
+-- Insert sample users based on the provided data
 INSERT INTO Users (username, email, password_hash, location, preferences)
-SELECT 'b', 'user_b@example.com', 'hashed_password_b', 'London, UK', '["Long coat"]'
-WHERE NOT EXISTS (
-    SELECT 1 FROM Users WHERE email = 'user_b@example.com'
-);
+VALUES 
+('user_a', 'user_a@example.com', 'hashed_password_a', 'NY, USA', '["Black"]'),
+('user_b', 'user_b@example.com', 'hashed_password_b', 'London, UK', '["Long coat"]');
 
 -- Output: Show all users to ensure they were inserted correctly
 SELECT * FROM Users;
+
 ----------------------------------------------------------------------------------------
--- Insert sample wardrobe items (ensure user_id exists in Users table)
+-- Insert sample wardrobe items based on the provided data
 INSERT INTO Wardrobe_Items (user_id, type, season, fabric, color, size, tags, image_url)
-SELECT 1, 'T-shirt', 'summer', 'cotton', 'blue', 'M', '["casual", "light"]', 'http://example.com/tshirt.jpg'
-WHERE EXISTS (
-    SELECT 1 FROM Users WHERE user_id = 1
-);
-
-INSERT INTO Wardrobe_Items (user_id, type, season, fabric, color, size, tags, image_url)
-SELECT 1, 'Jeans', 'all_season', 'denim', 'black', '32', '["casual"]', 'http://example.com/jeans.jpg'
-WHERE EXISTS (
-    SELECT 1 FROM Users WHERE user_id = 1
-);
-
-INSERT INTO Wardrobe_Items (user_id, type, season, fabric, color, size, tags, image_url)
-SELECT 2, 'Dress', 'summer', 'silk', 'red', 'M', '["formal", "evening"]', 'http://example.com/dress.jpg'
-WHERE EXISTS (
-    SELECT 1 FROM Users WHERE user_id = 2
-);
+VALUES 
+(1, 'T-shirt', 'summer', 'cotton', 'blue', 'M', '["casual", "light"]', 'http://example.com/tshirt.jpg'),
+(1, 'Jeans', 'all_season', 'denim', 'black', '32', '["casual"]', 'http://example.com/jeans.jpg'),
+(2, 'Dress', 'summer', 'silk', 'red', 'M', '["formal", "evening"]', 'http://example.com/dress.jpg');
 
 -- Output: Show all wardrobe items
 SELECT * FROM Wardrobe_Items;
+
 -------------------------------------------------------
 
--- Insert sample outfits
+-- Insert sample outfits based on the provided data
 INSERT INTO Outfits (user_id, occasion, weather_condition, trend_score)
-SELECT 1, 'casual', 'sunny', 7.5
-WHERE EXISTS (
-    SELECT 1 FROM Users WHERE user_id = 1
-);
-
-INSERT INTO Outfits (user_id, occasion, weather_condition, trend_score)
-SELECT 2, 'formal', 'cloudy', 8.0
-WHERE EXISTS (
-    SELECT 1 FROM Users WHERE user_id = 2
-);
+VALUES 
+(1, 'casual', 'sunny', 7.5),
+(2, 'formal', 'cloudy', 8.0);
 
 -- Output: Show all outfits
 SELECT * FROM Outfits;
+
 -----------------------------------------------
 -- Insert sample data into the Outfit_Wardrobe_Items junction table
 INSERT INTO Outfit_Wardrobe_Items (outfit_id, item_id)
-SELECT 1, 1
-WHERE EXISTS (
-    SELECT 1 FROM Outfits WHERE outfit_id = 1
-) AND EXISTS (
-    SELECT 1 FROM Wardrobe_Items WHERE item_id = 1
-);
-
-INSERT INTO Outfit_Wardrobe_Items (outfit_id, item_id)
-SELECT 1, 2
-WHERE EXISTS (
-    SELECT 1 FROM Outfits WHERE outfit_id = 1
-) AND EXISTS (
-    SELECT 1 FROM Wardrobe_Items WHERE item_id = 2
-);
-
-INSERT INTO Outfit_Wardrobe_Items (outfit_id, item_id)
-SELECT 2, 3
-WHERE EXISTS (
-    SELECT 1 FROM Outfits WHERE outfit_id = 2
-) AND EXISTS (
-    SELECT 1 FROM Wardrobe_Items WHERE item_id = 3
-);
+VALUES 
+(1, 1),
+(1, 2),
+(2, 3);
 
 -- Output: Show all outfit-wardrobe item relationships
 SELECT * FROM Outfit_Wardrobe_Items;
+
 ---------------------------------------------------------
 
--- Insert sample weather data
+-- Insert sample weather data based on the provided data
 INSERT INTO Weather_Data (user_id, location, temperature, precipitation, wind_speed, humidity)
-SELECT 1, 'London, UK', 63.1, 0.11, 12.1, 85
-WHERE EXISTS (
-    SELECT 1 FROM Users WHERE user_id = 1
-);
-
--- Repeat for the second weather data entry:
-INSERT INTO Weather_Data (user_id, location, temperature, precipitation, wind_speed, humidity)
-SELECT 2, 'London, UK', 61.8, 0.01, 8.9, 80.4
-WHERE EXISTS (
-    SELECT 1 FROM Users WHERE user_id = 2
-);
+VALUES 
+(1, 'London, UK', 63.1, 0.11, 12.1, 85.0),
+(2, 'London, UK', 61.8, 0.01, 8.9, 80.4);
 
 -- Output: Show all weather data
 SELECT * FROM Weather_Data;
+
+-------------------------------------------------------
+-- Insert sample fashion trends data
+INSERT INTO Fashion_Trends (title, description, categories, image_url, source_url)
+VALUES 
+('Summer 2024 Trends', 'Light and airy fabrics dominate', '["summer", "light"]', 'http://example.com/trends2024.jpg', 'http://example.com/source'),
+('Winter 2024 Trends', 'Cozy and oversized are in', '["winter", "oversized"]', 'http://example.com/trends_winter.jpg', 'http://example.com/source_winter');
+
+-- Output: Show all fashion trends
+SELECT * FROM Fashion_Trends;
+
+-------------------------------------------------------
+-- Insert sample e-commerce products data based on the provided data
+INSERT INTO E_Commerce_Products (user_id, suggested_item_type, product_name, price, product_url, image_url)
+VALUES 
+(1, 'T-shirt', 'Blue Cotton T-shirt', 29.99, 'http://example.com/blue_tshirt', 'http://example.com/blue_tshirt.jpg'),
+(2, 'Dress', 'Red Silk Dress', 119.99, 'http://example.com/red_silk_dress', 'http://example.com/red_silk_dress.jpg');
+
+-- Output: Show all e-commerce products
+SELECT * FROM E_Commerce_Products;
