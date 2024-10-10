@@ -148,37 +148,109 @@ VALUES
 SELECT * FROM Users;
 
 ----------------------------------------------------------------------------------------
--- Insert sample wardrobe items based on the provided data
-INSERT INTO Wardrobe_Items (user_id, type, season, fabric, color, size, tags, image_url)
-VALUES 
-(1, 'T-shirt', 'summer', 'cotton', 'blue', 'M', '["casual", "light"]', 'http://example.com/tshirt.jpg'),
-(1, 'Jeans', 'all_season', 'denim', 'black', '32', '["casual"]', 'http://example.com/jeans.jpg'),
-(2, 'Dress', 'summer', 'silk', 'red', 'M', '["formal", "evening"]', 'http://example.com/dress.jpg');
 
--- Output: Show all wardrobe items
-SELECT * FROM Wardrobe_Items;
+-- Insert sample users if they don't already exist
+INSERT INTO Users (username, email, password_hash, location, preferences)
+SELECT 'user_a', 'user_a@example.com', 'hashed_password_a', 'NY, USA', '["Black"]'
+WHERE NOT EXISTS (
+    SELECT 1 FROM Users WHERE email = 'user_a@example.com'
+);
+
+INSERT INTO Users (username, email, password_hash, location, preferences)
+SELECT 'user_b', 'user_b@example.com', 'hashed_password_b', 'London, UK', '["Long coat"]'
+WHERE NOT EXISTS (
+    SELECT 1 FROM Users WHERE email = 'user_b@example.com'
+);
+
+-- Output: Show all users to ensure they were inserted correctly
+SELECT * FROM Users;
+
+
 
 -------------------------------------------------------
 
--- Insert sample outfits based on the provided data
+-- Verify that users exist in the Users table
+SELECT user_id, username FROM Users;
+-- Insert sample outfits based on the provided data, ensuring the correct user_id is used
+-- Assuming user_id 1 and 2 exist for 'user_a' and 'user_b'
 INSERT INTO Outfits (user_id, occasion, weather_condition, trend_score)
-VALUES 
-(1, 'casual', 'sunny', 7.5),
-(2, 'formal', 'cloudy', 8.0);
+SELECT user_id, 'casual', 'sunny', 7.5
+FROM Users
+WHERE username = 'user_a';
+
+INSERT INTO Outfits (user_id, occasion, weather_condition, trend_score)
+SELECT user_id, 'formal', 'cloudy', 8.0
+FROM Users
+WHERE username = 'user_b';
 
 -- Output: Show all outfits
 SELECT * FROM Outfits;
-
------------------------------------------------
 -- Insert sample data into the Outfit_Wardrobe_Items junction table
+-- Ensure the outfit_id and item_id are correct and exist in the respective tables
 INSERT INTO Outfit_Wardrobe_Items (outfit_id, item_id)
-VALUES 
-(1, 1),
-(1, 2),
-(2, 3);
+SELECT 1, 1
+WHERE EXISTS (SELECT 1 FROM Outfits WHERE outfit_id = 1)
+  AND EXISTS (SELECT 1 FROM Wardrobe_Items WHERE item_id = 1);
+
+INSERT INTO Outfit_Wardrobe_Items (outfit_id, item_id)
+SELECT 1, 2
+WHERE EXISTS (SELECT 1 FROM Outfits WHERE outfit_id = 1)
+  AND EXISTS (SELECT 1 FROM Wardrobe_Items WHERE item_id = 2);
+
+INSERT INTO Outfit_Wardrobe_Items (outfit_id, item_id)
+SELECT 2, 3
+WHERE EXISTS (SELECT 1 FROM Outfits WHERE outfit_id = 2)
+  AND EXISTS (SELECT 1 FROM Wardrobe_Items WHERE item_id = 3);
 
 -- Output: Show all outfit-wardrobe item relationships
 SELECT * FROM Outfit_Wardrobe_Items;
+
+
+-----------------------------------------------
+-- Insert sample outfits based on the provided data
+-- Using a SELECT to retrieve the correct user_id from the Users table
+INSERT INTO Outfits (user_id, occasion, weather_condition, trend_score)
+SELECT user_id, 'casual', 'sunny', 7.5
+FROM Users
+WHERE username = 'user_a';
+
+INSERT INTO Outfits (user_id, occasion, weather_condition, trend_score)
+SELECT user_id, 'formal', 'cloudy', 8.0
+FROM Users
+WHERE username = 'user_b';
+
+-- Output: Show all outfits and their corresponding outfit_id to use in the next step
+SELECT * FROM Outfits;
+
+-- Retrieve the outfit_id values
+SELECT outfit_id, user_id, occasion FROM Outfits;
+
+-- Insert sample data into the Outfit_Wardrobe_Items junction table
+-- Use the correct outfit_id and item_id values from the previous SELECT query
+INSERT INTO Outfit_Wardrobe_Items (outfit_id, item_id)
+VALUES 
+(1, 1),  -- Assuming outfit_id 1 corresponds to the first outfit
+(1, 2),
+(2, 3);  -- Assuming outfit_id 2 corresponds to the second outfit
+
+-- Output: Show all outfit-wardrobe item relationships
+SELECT * FROM Outfit_Wardrobe_Items;
+
+-- Insert sample weather data based on the provided data
+-- Ensure the correct user_id exists in the Users table
+INSERT INTO Weather_Data (user_id, location, temperature, precipitation, wind_speed, humidity)
+SELECT user_id, 'London, UK', 63.1, 0.11, 12.1, 85.0
+FROM Users
+WHERE username = 'user_a';
+
+INSERT INTO Weather_Data (user_id, location, temperature, precipitation, wind_speed, humidity)
+SELECT user_id, 'London, UK', 61.8, 0.01, 8.9, 80.4
+FROM Users
+WHERE username = 'user_b';
+
+-- Output: Show all weather data
+SELECT * FROM Weather_Data;
+
 
 ---------------------------------------------------------
 
