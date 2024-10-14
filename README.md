@@ -311,7 +311,7 @@ Follow the structure below for each request:
       "message": "Item deleted successfully"
     }
     ```
-For reference, you can find all the API tests in the [Postman_Tests.txt](Postman%20Tests.txt) file. This file contains descriptions of each API endpoint including method types, expected inputs, and outputs.
+For reference, you can find all the API tests in the [Postman_Tests.txt](Postman_Tests.txt) file. This file contains descriptions of each API endpoint including method types, expected inputs, and outputs.
 
 ## Conclusion
 
