@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from typing import List
 
 # Database configuration
-SQLALCHEMY_DATABASE_URL = ""  
+SQLALCHEMY_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/postgres"  
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -59,6 +59,19 @@ def get_db():
         yield db
     finally:
         db.close()
+class UserCreate(BaseModel):
+    username: str
+    email: str
+    
+# API endpoint to create a new user
+@app.post("/users/", response_model=UserCreate)
+def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    new_user = Users(username=user.username, email=user.email)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
 
 # API endpoint to get all clothing items
 @app.get("/clothing_items/", response_model=List[ClothingItem])
