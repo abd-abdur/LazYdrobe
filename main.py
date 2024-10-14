@@ -45,9 +45,9 @@ class ClothingItem(BaseModel):
     size: str
     tags: str
     image_url: str
-
     class Config:
-        orm_mode = True
+        from_attributes = True 
+
 
 # FastAPI app instance
 app = FastAPI()
@@ -76,8 +76,8 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 # API endpoint to get all clothing items
 @app.get("/clothing_items/", response_model=List[ClothingItem])
 def get_clothing_items(db: Session = Depends(get_db)):
-    items = db.query(WardrobeItems).all()
-    return items
+    return db.query(WardrobeItems).all()
+
 
 # API endpoint to get a specific clothing item by ID
 @app.get("/clothing_items/{item_id}", response_model=ClothingItem)
@@ -87,14 +87,32 @@ def get_clothing_item(item_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Item not found")
     return item
 
+
 # API endpoint to create a new clothing item
 @app.post("/clothing_items/", response_model=ClothingItem)
 def create_clothing_item(item: ClothingItem, db: Session = Depends(get_db)):
+    # Check if the user exists
+    user = db.query(Users).filter(Users.user_id == item.user_id).first()
+    
+    # If the user does not exist, create a new user
+    if user is None:
+        # Generate a new username and email
+        new_user = Users(username=f"user_{item.user_id}", email=f"user_{item.user_id}@example.com")
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)  # Refresh to get the new user ID
+
+        # Now set the user_id for the clothing item to the newly created user's ID
+        item.user_id = new_user.user_id
+
+    # Create a new wardrobe item
     new_item = WardrobeItems(**item.dict())
     db.add(new_item)
     db.commit()
     db.refresh(new_item)
     return new_item
+
+
 
 # API endpoint to update an existing clothing item
 @app.put("/clothing_items/{item_id}", response_model=ClothingItem)
