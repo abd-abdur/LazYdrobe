@@ -165,7 +165,8 @@ On Windows: .\.venv\Scripts\activate
 On macOS/Linux: source .venv/bin/activate
 
 ### Step 4: Install Required Dependencies (Optional)
-If your project involves any Python scripts that interact with the database, install the required packages from the requirements.txt file.
+Install the required packages from the requirements.txt file.
+
 pip install -r requirements.txt
 
 ### Step 5: Launch Your Database Management System (DBMS)
@@ -228,6 +229,92 @@ SELECT * FROM Outfits;
 2. Modify Sample Data: You can modify, delete, or add new entries to test different aspects of the database, such as the relationships between users and their wardrobe items.
 3. Check Data Integrity: Try deleting a user and see how it cascades down to related records in other tables (e.g., their wardrobe items should be deleted).
 
-## Conclusion
-The provided SQL script sets up a fully functional database for a fashion e-commerce platform, complete with relationships, foreign keys, and sample data. By following the steps outlined above, you can install, test, and modify the database to suit your needs. This setup is ideal for developers looking to simulate and test features related to user fashion profiles, weather-based outfit suggestions, and e-commerce product recommendations.
+## Running the API Application
 
+To run the FastAPI application, follow these steps:
+
+1. Open your terminal or command prompt.
+2. Navigate to the directory where your `main.py` file is located.
+3. Use the following command to start the application:
+
+   ```bash
+   uvicorn main:app --reload
+
+4. Once the server is running, you can access the application locally at:
+    ```bash
+  http://127.0.0.1:8000
+
+## Using Postman to Interact with the API
+
+You can use Postman to test the API endpoints. Here’s how to set it up:
+
+### Step 1: Open Postman
+Launch the Postman application or access it through the web.
+
+### Step 2: Create a New Collection
+1. Click on the **Collections** tab.
+2. Create a new collection named **"LazYdrobe API Tests"**.
+
+### Step 3: Add Requests
+Follow the structure below for each request:
+
+#### 1. Retrieve All Clothing Items
+- **Method**: `GET`
+- **Endpoint**: `http://127.0.0.1:8000/clothing_items/`
+- **Expected Output**: JSON array of clothing items.
+
+#### 2. Retrieve a Specific Clothing Item by ID
+- **Method**: `GET`
+- **Endpoint**: `http://127.0.0.1:8000/clothing_items/{item_id}`
+- **Expected Output**: JSON object of the clothing item.
+
+#### 3. Create a New Clothing Item
+- **Method**: `POST`
+- **Endpoint**: `http://127.0.0.1:8000/clothing_items/`
+- **JSON Input**:
+    ```json
+    {
+      "user_id": 1,
+      "type": "T-shirt",
+      "season": "Summer",
+      "fabric": "Cotton",
+      "color": "Blue",
+      "size": "L",
+      "tags": "casual, summer",
+      "image_url": "http://example.com/tshirt.jpg"
+    }
+    ```
+- **Expected Output**: JSON object of the created clothing item.
+
+#### 4. Update an Existing Clothing Item
+- **Method**: `PUT`
+- **Endpoint**: `http://127.0.0.1:8000/clothing_items/{item_id}`
+- **JSON Input**:
+    ```json
+    {
+      "user_id": 1,
+      "type": "Updated T-shirt",
+      "season": "Summer",
+      "fabric": "Cotton",
+      "color": "Red",
+      "size": "M",
+      "tags": "casual, summer",
+      "image_url": "http://example.com/updated_tshirt.jpg"
+    }
+    ```
+- **Expected Output**: JSON object of the updated clothing item.
+
+#### 5. Delete a Clothing Item by ID
+- **Method**: `DELETE`
+- **Endpoint**: `http://127.0.0.1:8000/clothing_items/{item_id}`
+- **Expected Output**:
+    ```json
+    {
+      "message": "Item deleted successfully"
+    }
+    ```
+For reference, you can find all the API tests in the [Postman_Tests.txt](Postman%20Tests.txt) file. This file contains descriptions of each API endpoint including method types, expected inputs, and outputs.
+
+## Conclusion
+
+The **LazYdrobe API** provides a robust and flexible interface for interacting with the wardrobe management application enabling users to perform essential CRUD operations on clothing items. By following the steps outlined above, you can easily set up, test, and utilize the API to meet your wardrobe management needs. This API is designed for developers looking to integrate personalized outfit suggestions based on user preferences and weather data into their applications.

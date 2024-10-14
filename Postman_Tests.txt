@@ -1,0 +1,149 @@
+Postman Tests for API Endpoints
+
+1. Retrieve All Clothing Items
+- **Endpoint**: GET /clothing_items/
+- **Method**: GET
+- **Output**: 
+[
+   {
+       "user_id": 1,
+       "type": "T-shirt",
+       "season": "Summer",
+       "fabric": "Cotton",
+       "color": "Blue",
+       "size": "M",
+       "tags": "casual",
+       "image_url": "http://example.com/tshirt.jpg"
+   },
+   {
+       "user_id": 1,
+       "type": "T-shirt",
+       "season": "Summer",
+       "fabric": "Cotton",
+       "color": "Blue",
+       "size": "M",
+       "tags": "casual",
+       "image_url": "http://example.com/tshirt.jpg"
+   },
+   {
+       "user_id": 1,
+       "type": "Jacket",
+       "season": "Winter",
+       "fabric": "Wool",
+       "color": "Black",
+       "size": "L",
+       "tags": "formal",
+       "image_url": "http://example.com/jacket.jpg"
+   },
+   {
+       "user_id": 2,
+       "type": "Jeans",
+       "season": "All-season",
+       "fabric": "Denim",
+       "color": "Dark Blue",
+       "size": "32",
+       "tags": "casual",
+       "image_url": "http://example.com/jeans.jpg"
+   },
+   {
+       "user_id": 2,
+       "type": "Shirt",
+       "season": "All-season",
+       "fabric": "Cotton Blend",
+       "color": "White",
+       "size": "L",
+       "tags": "formal, business, classic",
+       "image_url": "http://example.com/formal_shirt.jpg"
+   },
+   {
+       "user_id": 3,
+       "type": "Pants",
+       "season": "Spring, Fall",
+       "fabric": "Ripstop Nylon",
+       "color": "Olive Green",
+       "size": "34",
+       "tags": "outdoor, hiking, durable",
+       "image_url": "http://example.com/hiking_pants.jpg"
+   }
+]
+
+2. Retrieve a Specific Clothing Item by ID
+- **Endpoint**: GET /clothing_items/{item_id}
+- **Method**: GET
+- **URL Parameters**: 
+  - item_id: Replace {item_id} with an existing clothing item ID (e.g., 2).
+- **Output**: 
+{
+   "user_id": 1,
+   "type": "T-shirt",
+   "season": "Summer",
+   "fabric": "Cotton",
+   "color": "Blue",
+   "size": "M",
+   "tags": "casual",
+   "image_url": "http://example.com/tshirt.jpg"
+}
+
+3. Create a New Clothing Item
+- **Endpoint**: POST /clothing_items/
+- **Method**: POST
+- **JSON Input**:
+{
+  "user_id": 1,
+  "type": "T-shirt",
+  "season": "Summer",
+  "fabric": "Cotton",
+  "color": "Blue",
+  "size": "L",
+  "tags": "casual, summer",
+  "image_url": "http://example.com/tshirt.jpg"
+}
+- **Output**: 
+{
+   "user_id": 1,
+   "type": "T-shirt",
+   "season": "Summer",
+   "fabric": "Cotton",
+   "color": "Blue",
+   "size": "L",
+   "tags": "casual, summer",
+   "image_url": "http://example.com/tshirt.jpg"
+}
+
+4. Update an Existing Clothing Item
+- **Endpoint**: PUT /clothing_items/{item_id}
+- **Method**: PUT
+- **URL Parameters**: 
+  - item_id: Replace {item_id} with an existing clothing item ID (e.g., 2).
+- **JSON Input**:
+{
+  "user_id": 1,
+  "type": "Updated T-shirt",
+  "season": "Summer",
+  "fabric": "Cotton",
+  "color": "Red",
+  "size": "M",
+  "tags": "casual, summer",
+  "image_url": "http://example.com/updated_tshirt.jpg"
+}
+- **Output**: 
+{
+   "user_id": 1,
+   "type": "Updated T-shirt",
+   "season": "Summer",
+   "fabric": "Cotton",
+   "color": "Red",
+   "size": "M",
+   "tags": "casual, summer",
+   "image_url": "http://example.com/updated_tshirt.jpg"
+}
+
+5. Delete a Clothing Item by ID
+- **Endpoint**: DELETE /clothing_items/{item_id}
+- **Method**: DELETE
+- **URL Parameters**: 
+  - item_id: Replace {item_id} with the ID of the clothing item you want to delete (e.g., 2).
+- **Output**: 
+{
+   "message": "Item deleted successfully"
+}
