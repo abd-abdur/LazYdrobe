@@ -240,9 +240,7 @@ To run the FastAPI application, follow these steps:
    ```bash
    uvicorn main:app --reload
 
-4. Once the server is running, you can access the application locally at:
-    ```bash
-  http://127.0.0.1:8000
+4. Once the server is running, you can access the application locally at: http://127.0.0.1:8000
 
 ## Using Postman to Interact with the API
 
