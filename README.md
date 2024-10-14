@@ -155,7 +155,7 @@ git clone https://github.com/abd-abdur/LazYdrobe.git
 After cloning the repository, navigate to the directory containing the project.
 cd path/to/LazYdrobe
 
-### Step 3: (Optional) Set Up a Virtual Environment
+### Step 3: Set Up a Virtual Environment
 For Python-based projects, it's recommended to use a virtual environment to isolate project dependencies.
 python -m venv .venv
 
@@ -164,7 +164,7 @@ Activate the virtual environment:
 On Windows: .\.venv\Scripts\activate
 On macOS/Linux: source .venv/bin/activate
 
-### Step 4: Install Required Dependencies (Optional)
+### Step 4: Install Required Dependencies
 Install the required packages from the requirements.txt file.
 
 pip install -r requirements.txt
