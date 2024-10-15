@@ -157,19 +157,17 @@ cd path/to/LazYdrobe
 
 ### Step 3: Set Up a Virtual Environment
 For Python-based projects, it's recommended to use a virtual environment to isolate project dependencies.
-python -m venv .venv
+```python -m venv .venv```
 
 Activate the virtual environment:
-```
-On Windows: .\.venv\Scripts\activate
-On macOS/Linux: source .venv/bin/activate
-```
+On Windows: 
+```.\.venv\Scripts\activate```
+On macOS/Linux: source 
+```.venv/bin/activate```
 
 ### Step 4: Install Required Dependencies
 Install the required packages from the requirements.txt file.
-```
-pip install -r requirements.txt
-```
+```pip install -r requirements.txt```
 ### Step 5: Launch Your Database Management System (DBMS)
 You need to use a SQL-compatible DBMS like PostgreSQL, MySQL, MariaDB, or similar. Open your DBMS and navigate to the query editor.
 
@@ -240,6 +238,7 @@ To run the FastAPI application, follow these steps:
 
    ```bash
    uvicorn main:app --reload
+   ```
 
 4. Once the server is running, you can access the application locally at: http://127.0.0.1:8000
 
