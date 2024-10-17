@@ -7,3 +7,6 @@ fastapi
 uvicorn
 sqlalchemy
 psycopg2-binary
+
+openai
+scikit-learn
