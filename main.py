@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from typing import List
 
 # Database configuration
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/postgres"  
+SQLALCHEMY_DATABASE_URL = "postgresql://lazydrobe:k6@059Of:OpD@UpO@34.44.42.132:5432/lazydrobe"  
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -48,7 +48,6 @@ class ClothingItem(BaseModel):
     class Config:
         from_attributes = True 
 
-
 # FastAPI app instance
 app = FastAPI()
 
@@ -59,6 +58,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
 class UserCreate(BaseModel):
     username: str
     email: str
@@ -72,12 +72,10 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
-
 # API endpoint to get all clothing items
 @app.get("/clothing_items/", response_model=List[ClothingItem])
 def get_clothing_items(db: Session = Depends(get_db)):
     return db.query(WardrobeItems).all()
-
 
 # API endpoint to get a specific clothing item by ID
 @app.get("/clothing_items/{item_id}", response_model=ClothingItem)
@@ -86,7 +84,6 @@ def get_clothing_item(item_id: int, db: Session = Depends(get_db)):
     if item is None:
         raise HTTPException(status_code=404, detail="Item not found")
     return item
-
 
 # API endpoint to create a new clothing item
 @app.post("/clothing_items/", response_model=ClothingItem)
@@ -111,8 +108,6 @@ def create_clothing_item(item: ClothingItem, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_item)
     return new_item
-
-
 
 # API endpoint to update an existing clothing item
 @app.put("/clothing_items/{item_id}", response_model=ClothingItem)
