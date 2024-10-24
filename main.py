@@ -1,3 +1,8 @@
+pip install fastapi
+pip install "uvicorn[standard]"
+pip install sqlalchemy pydantic
+uvicorn your_fastapi_app:app --reload
+
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, create_engine, ForeignKey
