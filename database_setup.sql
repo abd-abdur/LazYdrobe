@@ -1,3 +1,5 @@
+psql -h 34.44.42.132 -d lazydrobe -U lazydrobe
+
 -- DELETE statements to clear any existing data from tables
 DELETE FROM users;
 DELETE FROM clothing;
@@ -180,3 +182,7 @@ VALUES
 
 -- Output: Show all e-commerce products
 SELECT * FROM eCommerceProduct;
+
+-------------------------------------------------------
+
+
