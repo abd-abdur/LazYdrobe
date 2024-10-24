@@ -1,13 +1,9 @@
-pip install fastapi
-pip install "uvicorn[standard]"
-pip install sqlalchemy pydantic
-uvicorn your_fastapi_app:app --reload
-
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, create_engine, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
+import pandas as pd
 from typing import List
 
 # Database configuration
@@ -40,22 +36,6 @@ class Users(Base):
 # Create tables if they don't exist
 Base.metadata.create_all(bind=engine)
 
-# Pydantic model for input validation
-class ClothingItem(BaseModel):
-    user_id: int
-    type: str
-    season: str
-    fabric: str
-    color: str
-    size: str
-    tags: str
-    image_url: str
-    class Config:
-        from_attributes = True 
-
-# FastAPI app instance
-app = FastAPI()
-
 # Dependency to get DB session
 def get_db():
     db = SessionLocal()
@@ -64,78 +44,72 @@ def get_db():
     finally:
         db.close()
 
-class UserCreate(BaseModel):
-    username: str
-    email: str
-    
-# API endpoint to create a new user
-@app.post("/users/", response_model=UserCreate)
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    new_user = Users(username=user.username, email=user.email)
+# Function to display users table
+def display_users_table():
+    # Create a database session
+    db = SessionLocal()
+    # Query all users
+    users = db.query(Users).all()
+    # Convert the query results to a Pandas DataFrame for tabular display
+    users_df = pd.DataFrame([{
+        'user_id': user.user_id,
+        'username': user.username,
+        'email': user.email
+    } for user in users])
+    db.close()
+    return users_df
+
+# Function to display wardrobe items table
+def display_wardrobe_items_table():
+    # Create a database session
+    db = SessionLocal()
+    # Query all wardrobe items
+    wardrobe_items = db.query(WardrobeItems).all()
+    # Convert the query results to a Pandas DataFrame for tabular display
+    wardrobe_df = pd.DataFrame([{
+        'item_id': item.item_id,
+        'user_id': item.user_id,
+        'type': item.type,
+        'season': item.season,
+        'fabric': item.fabric,
+        'color': item.color,
+        'size': item.size,
+        'tags': item.tags,
+        'image_url': item.image_url
+    } for item in wardrobe_items])
+    db.close()
+    return wardrobe_df
+
+# Sample function to insert a user
+def insert_sample_user():
+    db = SessionLocal()
+    new_user = Users(username="example_user", email="example_user@example.com")
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return new_user
+    db.close()
 
-# API endpoint to get all clothing items
-@app.get("/clothing_items/", response_model=List[ClothingItem])
-def get_clothing_items(db: Session = Depends(get_db)):
-    return db.query(WardrobeItems).all()
-
-# API endpoint to get a specific clothing item by ID
-@app.get("/clothing_items/{item_id}", response_model=ClothingItem)
-def get_clothing_item(item_id: int, db: Session = Depends(get_db)):
-    item = db.query(WardrobeItems).filter(WardrobeItems.item_id == item_id).first()
-    if item is None:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return item
-
-# API endpoint to create a new clothing item
-@app.post("/clothing_items/", response_model=ClothingItem)
-def create_clothing_item(item: ClothingItem, db: Session = Depends(get_db)):
-    # Check if the user exists
-    user = db.query(Users).filter(Users.user_id == item.user_id).first()
-    
-    # If the user does not exist, create a new user
-    if user is None:
-        # Generate a new username and email
-        new_user = Users(username=f"user_{item.user_id}", email=f"user_{item.user_id}@example.com")
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)  # Refresh to get the new user ID
-
-        # Now set the user_id for the clothing item to the newly created user's ID
-        item.user_id = new_user.user_id
-
-    # Create a new wardrobe item
-    new_item = WardrobeItems(**item.dict())
+# Sample function to insert wardrobe items
+def insert_sample_wardrobe_item():
+    db = SessionLocal()
+    new_item = WardrobeItems(user_id=1, type="T-shirt", season="Summer", fabric="Cotton", color="Blue", size="M", tags="casual", image_url="https://example.com/tshirt.jpg")
     db.add(new_item)
     db.commit()
     db.refresh(new_item)
-    return new_item
+    db.close()
 
-# API endpoint to update an existing clothing item
-@app.put("/clothing_items/{item_id}", response_model=ClothingItem)
-def update_clothing_item(item_id: int, updated_item: ClothingItem, db: Session = Depends(get_db)):
-    item = db.query(WardrobeItems).filter(WardrobeItems.item_id == item_id).first()
-    if item is None:
-        raise HTTPException(status_code=404, detail="Item not found")
-    
-    # Update the fields
-    for key, value in updated_item.dict().items():
-        setattr(item, key, value)
+# Insert sample data
+insert_sample_user()
+insert_sample_wardrobe_item()
 
-    db.commit()
-    db.refresh(item)
-    return item
+# Display tables as outputs
+users_df = display_users_table()
+wardrobe_df = display_wardrobe_items_table()
 
-# API endpoint to delete a clothing item by ID
-@app.delete("/clothing_items/{item_id}")
-def delete_clothing_item(item_id: int, db: Session = Depends(get_db)):
-    item = db.query(WardrobeItems).filter(WardrobeItems.item_id == item_id).first()
-    if item is None:
-        raise HTTPException(status_code=404, detail="Item not found")
-    
-    db.delete(item)
-    db.commit()
-    return {"message": "Item deleted successfully"}
+# Show users table
+print("Users Table:")
+users_df
+
+# Show wardrobe items table
+print("Wardrobe Items Table:")
+wardrobe_df
