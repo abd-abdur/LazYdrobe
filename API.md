@@ -74,60 +74,51 @@ Launch the Postman application or access it through the web.
 ### Step 3: Add Requests
 Follow the structure below for each request:
 
-#### 1. Retrieve All Clothing Items
+#### 1. Retrieve All Clothing Users
 - **Method**: `GET`
-- **Endpoint**: `http://127.0.0.1:8000/clothing_items/`
-- **Expected Output**: JSON array of clothing items.
+- **Endpoint**: `http://127.0.0.1:8000/users/`
+- **Expected Output**: JSON array of users
 
-#### 2. Retrieve a Specific Clothing Item by ID
+#### 2. Retrieve a Specific User by ID
 - **Method**: `GET`
-- **Endpoint**: `http://127.0.0.1:8000/clothing_items/{item_id}`
-- **Expected Output**: JSON object of the clothing item.
+- **Endpoint**: `http://127.0.0.1:8000/users/{user_id}`
+- **Expected Output**: JSON object of user
 
-#### 3. Create a New Clothing Item
+#### 3. Create a New User
 - **Method**: `POST`
-- **Endpoint**: `http://127.0.0.1:8000/clothing_items/`
+- **Endpoint**: `http://127.0.0.1:8000/users/`
 - **JSON Input**:
     ```json
     {
-      "user_id": 1,
-      "type": "T-shirt",
-      "season": "Summer",
-      "fabric": "Cotton",
-      "color": "Blue",
-      "size": "L",
-      "tags": "casual, summer",
-      "image_url": "http://example.com/tshirt.jpg"
-    }
+    "username": "john_doe",
+    "email": "john.doe@example.com",
+    "password": "SecurePass123",
+    "location": "New York",
+    "preferences": ["casual", "summer"]
+}
     ```
-- **Expected Output**: JSON object of the created clothing item.
+- **Expected Output**: JSON object of the created user.
 
-#### 4. Update an Existing Clothing Item
+#### 4. Update an Existing User
 - **Method**: `PUT`
-- **Endpoint**: `http://127.0.0.1:8000/clothing_items/{item_id}`
+- **Endpoint**: `http://127.0.0.1:8000/users/{user_id}`
 - **JSON Input**:
     ```json
     {
-      "user_id": 1,
-      "type": "Updated T-shirt",
-      "season": "Summer",
-      "fabric": "Cotton",
-      "color": "Red",
-      "size": "M",
-      "tags": "casual, summer",
-      "image_url": "http://example.com/updated_tshirt.jpg"
-    }
+    "username": "john_updated",
+    "email": "john_updated@example.com",
+    "location": "San Francisco",
+    "preferences": ["Sporty", "Casual"]
+}
     ```
-- **Expected Output**: JSON object of the updated clothing item.
+- **Expected Output**: JSON object of the updated user.
 
-#### 5. Delete a Clothing Item by ID
+#### 5. Delete a User by ID
 - **Method**: `DELETE`
-- **Endpoint**: `http://127.0.0.1:8000/clothing_items/{item_id}`
+- **Endpoint**: `http://127.0.0.1:8000/users/{user_id}`
 - **Expected Output**:
-    ```json
-    {
-      "message": "Item deleted successfully"
-    }
+    ```
+    204 No Content
     ```
 For reference, you can find all the API tests in the [Postman_Tests.txt](Postman_Tests.txt) file. This file contains descriptions of each API endpoint including method types, expected inputs, and outputs.
 
