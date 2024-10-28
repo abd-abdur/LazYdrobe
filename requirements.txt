@@ -6,7 +6,11 @@ python-dotenv
 fastapi
 uvicorn
 sqlalchemy
-psycopg2-binary
+pydantic
+passlib[bcrypt]
+python-dotenv
+pymysql
+
 
 openai
 scikit-learn
