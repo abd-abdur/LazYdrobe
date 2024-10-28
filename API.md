@@ -95,7 +95,7 @@ Follow the structure below for each request:
     "password": "SecurePass123",
     "location": "New York",
     "preferences": ["casual", "summer"]
-}
+    }
     ```
 - **Expected Output**: JSON object of the created user.
 
@@ -109,7 +109,7 @@ Follow the structure below for each request:
     "email": "john_updated@example.com",
     "location": "San Francisco",
     "preferences": ["Sporty", "Casual"]
-}
+    }
     ```
 - **Expected Output**: JSON object of the updated user.
 
