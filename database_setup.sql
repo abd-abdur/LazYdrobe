@@ -1,71 +1,85 @@
-psql -h 34.44.42.132 -d lazydrobe -U lazydrobe
 
--- DELETE statements to clear any existing data from tables
-DELETE FROM users;
-DELETE FROM clothing;
-DELETE FROM outfit;
-DELETE FROM eCommerceProduct;
-DELETE FROM weatherData;
-DELETE FROM fashion;
+-- =====================================================
+-- LazYdrobe Database Setup Script for MySQL
+-- =====================================================
 
-----------------------------------------
+-- 1. DROP EXISTING TABLES IF THEY EXIST
+DROP TABLE IF EXISTS outfit;
+DROP TABLE IF EXISTS wardrobe_items;
+DROP TABLE IF EXISTS e_commerce_product;
+DROP TABLE IF EXISTS fashion;
+DROP TABLE IF EXISTS weather_data;
+DROP TABLE IF EXISTS users;
 
--- Create the users table
+-- 2. CREATE USERS TABLE
 CREATE TABLE IF NOT EXISTS users (
-    user_id SERIAL PRIMARY KEY,
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    wardrobe TEXT[],
     user_ip VARCHAR(255),
     location VARCHAR(255),
-    preferences TEXT[],
-    date_joined TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
+    preferences JSON,
+    date_joined TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
 
--- Output: Check if the users table is created (structure)
-SELECT * FROM users LIMIT 0;
-
-----------------------------------------------------------------
--- Create the clothing table
-CREATE TABLE IF NOT EXISTS clothing (
-    item_id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
-    product_id INTEGER,
-    type VARCHAR(255) NOT NULL,
-    for_weather VARCHAR(255),
-    color TEXT[],
-    size VARCHAR(50),
-    tags TEXT[],
+-- 3. CREATE E_COMMERCE_PRODUCT TABLE
+CREATE TABLE IF NOT EXISTS e_commerce_product (
+    product_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    product_name VARCHAR(255) NOT NULL,
+    suggested_item_type VARCHAR(255),
+    price FLOAT,
+    product_url VARCHAR(255),
     image_url VARCHAR(255),
-    date_added TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_user_clothing FOREIGN KEY (user_id)
+    date_suggested TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_user_ecommerce FOREIGN KEY (user_id)
         REFERENCES users(user_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE
-);
+) ENGINE=InnoDB;
 
--- Output: Check if the clothing table is created (structure)
-SELECT * FROM clothing LIMIT 0;
-
-------------------------------------------------------------------------
--- Create the outfit table
-CREATE TABLE IF NOT EXISTS outfit (
-    outfit_id SERIAL PRIMARY KEY,
-    clothings TEXT[],
-    occasion TEXT[],
+-- 4. CREATE WARDROBE_ITEMS TABLE
+CREATE TABLE IF NOT EXISTS wardrobe_items (
+    item_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    product_id INT,
+    clothing_type VARCHAR(255) NOT NULL,
     for_weather VARCHAR(255),
-    date_suggested TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    source_url VARCHAR(255)
-);
+    color JSON,
+    size VARCHAR(50),
+    tags JSON,
+    image_url VARCHAR(255),
+    date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_user_clothing FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_product_clothing FOREIGN KEY (product_id)
+        REFERENCES e_commerce_product(product_id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE
+) ENGINE=InnoDB;
 
--- Output: Check if the outfit table is created (structure)
-SELECT * FROM outfit LIMIT 0;
+-- 5. CREATE OUTFIT TABLE
+CREATE TABLE IF NOT EXISTS outfit (
+    outfit_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    clothings JSON NOT NULL, -- Changed from ARRAY to JSON
+    occasion JSON,          -- Changed from ARRAY to JSON
+    for_weather VARCHAR(255),
+    date_suggested TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    source_url VARCHAR(255),
+    CONSTRAINT fk_user_outfit FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+) ENGINE=InnoDB;
 
--------------------------------------------------------------------------------------
--- Create the weatherData table
-CREATE TABLE IF NOT EXISTS weatherData (
-    date TIMESTAMPTZ NOT NULL,
+-- 6. CREATE WEATHER_DATA TABLE
+CREATE TABLE IF NOT EXISTS weather_data (
+    weather_id INT AUTO_INCREMENT PRIMARY KEY,
+    weather_date TIMESTAMP NOT NULL,
     location VARCHAR(255) NOT NULL,
     temp_max FLOAT,
     temp_min FLOAT,
@@ -76,113 +90,66 @@ CREATE TABLE IF NOT EXISTS weatherData (
     precipitation FLOAT,
     precipitation_probability FLOAT,
     special_condition VARCHAR(255)
-);
+) ENGINE=InnoDB;
 
--- Output: Check if the weatherData table is created (structure)
-SELECT * FROM weatherData LIMIT 0;
-
-----------------------------------------------------------------------------
--- Create the fashion table
+-- 7. CREATE FASHION TABLE
 CREATE TABLE IF NOT EXISTS fashion (
-    trend_id SERIAL PRIMARY KEY,
+    trend_id INT AUTO_INCREMENT PRIMARY KEY,
     trend_names VARCHAR(255) NOT NULL,
     description TEXT,
     temperature VARCHAR(255),
     occasion VARCHAR(255),
     image_url VARCHAR(255),
-    example_fits TEXT[]
-);
+    example_fits JSON, -- Changed from ARRAY to JSON
+    INDEX idx_trend_names (trend_names)
+) ENGINE=InnoDB;
 
--- Output: Check if the fashion table is created (structure)
-SELECT * FROM fashion LIMIT 0;
+-- 8. CREATE INDEXES FOR FOREIGN KEYS AND FREQUENTLY QUERIED COLUMNS
+CREATE INDEX idx_wardrobe_items_user_id ON wardrobe_items(user_id);
+CREATE INDEX idx_wardrobe_items_product_id ON wardrobe_items(product_id);
+CREATE INDEX idx_ecommerce_user_id ON e_commerce_product(user_id);
+CREATE INDEX idx_outfit_user_id ON outfit(user_id);
+CREATE INDEX idx_weather_data_location ON weather_data(location);
 
----------------------------------------------------------------------------
--- Create the eCommerceProduct table
-CREATE TABLE IF NOT EXISTS eCommerceProduct (
-    product_id SERIAL PRIMARY KEY,
-    product_name VARCHAR(255) NOT NULL,
-    suggested_item_type VARCHAR(255),
-    price FLOAT,
-    product_url VARCHAR(255),
-    image_url VARCHAR(255)
-);
+-- 9. INSERT SAMPLE DATA
 
--- Output: Check if the eCommerceProduct table is created (structure)
-SELECT * FROM eCommerceProduct LIMIT 0;
-
-------------------------------------------------------------------------------------------------
--- Insert sample users based on the provided data
+-- 9.1 Insert Sample Users
 INSERT INTO users (username, email, password, location, preferences)
 VALUES 
-('user_a', 'user_a@example.com', 'hashed_password_a', 'NY, USA', '{"Black"}'),
-('user_b', 'user_b@example.com', 'hashed_password_b', 'London, UK', '{"Long coat"}');
+('user_a', 'user_a@example.com', '$2b$12$e0NRaY5hOvG9aYoGc0VHeuxl25K5qSdeIwx/VEv7HBYe/.n.5bZ0K', 'NY, USA', JSON_ARRAY('Black')),
+('user_b', 'user_b@example.com', '$2b$12$e0NRaY5hOvG9aYoGc0VHeuxl25K5qSdeIwx/VEv7HBYe/.n.5bZ0K', 'London, UK', JSON_ARRAY('Long coat'))
+ON DUPLICATE KEY UPDATE email=email;
 
--- Output: Show all users to ensure they were inserted correctly
-SELECT * FROM users;
-
-----------------------------------------------------------------------------------------
-
--- Insert sample users if they don't already exist
-INSERT INTO users (username, email, password, location, preferences)
-SELECT 'user_a', 'user_a@example.com', 'hashed_password_a', 'NY, USA', '{"Black"}'
-WHERE NOT EXISTS (
-    SELECT 1 FROM users WHERE email = 'user_a@example.com'
-);
-
-INSERT INTO users (username, email, password, location, preferences)
-SELECT 'user_b', 'user_b@example.com', 'hashed_password_b', 'London, UK', '{"Long coat"}'
-WHERE NOT EXISTS (
-    SELECT 1 FROM users WHERE email = 'user_b@example.com'
-);
-
--- Output: Show all users to ensure they were inserted correctly
-SELECT * FROM users;
-
--------------------------------------------------------
-
--- Verify that users exist in the users table
-SELECT user_id, username FROM users;
-
--- Insert sample outfits based on the provided data, ensuring the correct user_id is used
--- Assuming user_id 1 and 2 exist for 'user_a' and 'user_b'
-INSERT INTO outfit (clothings, occasion, for_weather)
+-- 9.2 Insert Sample E-Commerce Products
+INSERT INTO e_commerce_product (user_id, product_name, suggested_item_type, price, product_url, image_url)
 VALUES 
-('{"shirt", "jeans"}', '{"casual"}', 'sunny'),
-('{"dress", "coat"}', '{"formal"}', 'cloudy');
+(1, 'Blue Cotton T-shirt', 'T-shirt', 29.99, 'http://example.com/blue_tshirt', 'http://example.com/blue_tshirt.jpg'),
+(2, 'Red Silk Dress', 'Dress', 119.99, 'http://example.com/red_silk_dress', 'http://example.com/red_silk_dress.jpg')
+ON DUPLICATE KEY UPDATE product_name=product_name;
 
--- Output: Show all outfits
-SELECT * FROM outfit;
-
------------------------------------------------
--- Insert sample weather data
-INSERT INTO weatherData (date, location, temp_max, temp_min, feels_max, feels_min, wind_speed, humidity, precipitation, precipitation_probability, special_condition)
+-- 9.3 Insert Sample Wardrobe Items
+INSERT INTO wardrobe_items (user_id, product_id, clothing_type, for_weather, color, size, tags, image_url)
 VALUES 
-('2024-10-10', 'London, UK', 20.0, 15.0, 18.0, 13.0, 5.0, 80.0, 0.5, 0.2, 'cloudy');
+(1, 1, 'T-shirt', 'Summer', JSON_ARRAY('Blue'), 'M', JSON_ARRAY('casual'), 'https://example.com/tshirt.jpg'),
+(2, 2, 'Dress', 'Summer', JSON_ARRAY('Red'), 'L', JSON_ARRAY('formal'), 'https://example.com/dress.jpg')
+ON DUPLICATE KEY UPDATE item_id=item_id;
 
--- Output: Show all weather data
-SELECT * FROM weatherData;
+-- 9.4 Insert Sample Outfits
+INSERT INTO outfit (user_id, clothings, occasion, for_weather, source_url)
+VALUES 
+(1, JSON_ARRAY(1), JSON_ARRAY('casual'), 'sunny', 'http://example.com/outfit1'),
+(2, JSON_ARRAY(2), JSON_ARRAY('formal'), 'cloudy', 'http://example.com/outfit2')
+ON DUPLICATE KEY UPDATE outfit_id=outfit_id;
 
--------------------------------------------------------
+-- 9.5 Insert Sample Weather Data
+INSERT INTO weather_data (weather_date, location, temp_max, temp_min, feels_max, feels_min, wind_speed, humidity, precipitation, precipitation_probability, special_condition)
+VALUES 
+('2024-10-10 12:00:00', 'London, UK', 20.0, 15.0, 18.0, 13.0, 5.0, 80.0, 0.5, 0.2, 'cloudy')
+ON DUPLICATE KEY UPDATE weather_id=weather_id;
 
--- Insert sample fashion trends data
+-- 9.6 Insert Sample Fashion Trends
 INSERT INTO fashion (trend_names, description, temperature, occasion, image_url, example_fits)
 VALUES 
-('Summer 2024 Trends', 'Light and airy fabrics dominate', 'warm', 'casual', 'http://example.com/trends2024.jpg', '{"fit1", "fit2"}'),
-('Winter 2024 Trends', 'Cozy and oversized are in', 'cold', 'formal', 'http://example.com/trends_winter.jpg', '{"fit3", "fit4"}');
-
--- Output: Show all fashion trends
-SELECT * FROM fashion;
-
--------------------------------------------------------
--- Insert sample e-commerce products data
-INSERT INTO eCommerceProduct (product_name, suggested_item_type, price, product_url, image_url)
-VALUES 
-('Blue Cotton T-shirt', 'T-shirt', 29.99, 'http://example.com/blue_tshirt', 'http://example.com/blue_tshirt.jpg'),
-('Red Silk Dress', 'Dress', 119.99, 'http://example.com/red_silk_dress', 'http://example.com/red_silk_dress.jpg');
-
--- Output: Show all e-commerce products
-SELECT * FROM eCommerceProduct;
-
--------------------------------------------------------
-
-
+('Summer 2024 Trends', 'Light and airy fabrics dominate', 'warm', 'casual', 'http://example.com/trends2024.jpg', JSON_ARRAY('fit1', 'fit2')),
+('Winter 2024 Trends', 'Cozy and oversized are in', 'cold', 'formal', 'http://example.com/trends_winter.jpg', JSON_ARRAY('fit3', 'fit4'))
+ON DUPLICATE KEY UPDATE trend_id=trend_id;
