@@ -62,29 +62,3 @@ CREATE TABLE IF NOT EXISTS outfits (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
-
--- Insert sample data into users table
-INSERT INTO users (username, email, password, user_ip, location, preferences)
-VALUES 
-('user1', 'user1@example.com', '$2b$12$e0NRaY5hOvG9aYoGc0VHeuxl25K5qSdeIwx/VEv7HBYe/.n.5bZ0K', '192.168.1.1', 'New York, USA', JSON_ARRAY('casual', 'black')),
-('user2', 'user2@example.com', '$2b$12$e0NRaY5hOvG9aYoGc0VHeuxl25K5qSdeIwx/VEv7HBYe/.n.5bZ0K', '192.168.1.2', 'London, UK', JSON_ARRAY('formal', 'blue'));
-
--- Insert sample data into ecommerce_products table
-INSERT INTO ecommerce_products (user_id, product_name, suggested_item_type, price, product_url, image_url)
-VALUES 
-(1, 'Black T-shirt', 'T-shirt', 19.99, 'http://example.com/black-tshirt', 'http://example.com/images/black-tshirt.jpg'),
-(1, 'Blue Jeans', 'Jeans', 39.99, 'http://example.com/blue-jeans', 'http://example.com/images/blue-jeans.jpg'),
-(2, 'Formal Shirt', 'Shirt', 29.99, 'http://example.com/formal-shirt', 'http://example.com/images/formal-shirt.jpg');
-
--- Insert sample data into wardrobe_items table
-INSERT INTO wardrobe_items (user_id, product_id, clothing_type, for_weather, color, size, tags, image_url)
-VALUES 
-(1, 1, 'T-shirt', 'summer', JSON_ARRAY('black'), 'M', JSON_ARRAY('casual', 'cotton'), 'http://example.com/images/black-tshirt.jpg'),
-(1, 2, 'Jeans', 'all-weather', JSON_ARRAY('blue'), '32', JSON_ARRAY('casual', 'denim'), 'http://example.com/images/blue-jeans.jpg'),
-(2, 3, 'Shirt', 'all-weather', JSON_ARRAY('white'), 'L', JSON_ARRAY('formal', 'long-sleeve'), 'http://example.com/images/formal-shirt.jpg');
-
--- Insert sample data into outfits table
-INSERT INTO outfits (user_id, clothings, occasion, for_weather, source_url)
-VALUES 
-(1, JSON_ARRAY('Black T-shirt', 'Blue Jeans'), JSON_ARRAY('casual', 'weekend'), 'summer', 'http://example.com/outfits/casual1'),
-(2, JSON_ARRAY('Formal Shirt'), JSON_ARRAY('business', 'meeting'), 'all-weather', 'http://example.com/outfits/formal1');
