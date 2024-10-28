@@ -1,148 +1,139 @@
 Postman Tests for API Endpoints
 
-1. Retrieve All Clothing Items
-- **Endpoint**: GET /clothing_items/
+1. Retrieve All Users
+- **Endpoint**: GET /users/
 - **Method**: GET
 - **Output**: 
 [
-   {
-       "user_id": 1,
-       "type": "T-shirt",
-       "season": "Summer",
-       "fabric": "Cotton",
-       "color": "Blue",
-       "size": "M",
-       "tags": "casual",
-       "image_url": "http://example.com/tshirt.jpg"
-   },
-   {
-       "user_id": 1,
-       "type": "T-shirt",
-       "season": "Summer",
-       "fabric": "Cotton",
-       "color": "Blue",
-       "size": "M",
-       "tags": "casual",
-       "image_url": "http://example.com/tshirt.jpg"
-   },
-   {
-       "user_id": 1,
-       "type": "Jacket",
-       "season": "Winter",
-       "fabric": "Wool",
-       "color": "Black",
-       "size": "L",
-       "tags": "formal",
-       "image_url": "http://example.com/jacket.jpg"
-   },
-   {
-       "user_id": 2,
-       "type": "Jeans",
-       "season": "All-season",
-       "fabric": "Denim",
-       "color": "Dark Blue",
-       "size": "32",
-       "tags": "casual",
-       "image_url": "http://example.com/jeans.jpg"
-   },
-   {
-       "user_id": 2,
-       "type": "Shirt",
-       "season": "All-season",
-       "fabric": "Cotton Blend",
-       "color": "White",
-       "size": "L",
-       "tags": "formal, business, classic",
-       "image_url": "http://example.com/formal_shirt.jpg"
-   },
-   {
-       "user_id": 3,
-       "type": "Pants",
-       "season": "Spring, Fall",
-       "fabric": "Ripstop Nylon",
-       "color": "Olive Green",
-       "size": "34",
-       "tags": "outdoor, hiking, durable",
-       "image_url": "http://example.com/hiking_pants.jpg"
-   }
+    {
+        "username": "user_a",
+        "email": "user_a@example.com",
+        "location": "NY, USA",
+        "preferences": [
+            "Black"
+        ],
+        "user_id": 1,
+        "date_joined": "2024-10-28T10:01:17"
+    },
+    {
+        "username": "user_b",
+        "email": "user_b@example.com",
+        "location": "London, UK",
+        "preferences": [
+            "Long coat"
+        ],
+        "user_id": 2,
+        "date_joined": "2024-10-28T10:01:17"
+    },
+    {
+        "username": "john_doe",
+        "email": "john.doe@example.com",
+        "location": "New York",
+        "preferences": [
+            "casual",
+            "summer"
+        ],
+        "user_id": 3,
+        "date_joined": "2024-10-28T10:39:13"
+    },
+    {
+        "username": "jane_doe",
+        "email": "jane.doe@example.com",
+        "location": "Los Angeles",
+        "preferences": [
+            "formal",
+            "winter"
+        ],
+        "user_id": 5,
+        "date_joined": "2024-10-28T10:44:00"
+    },
+    {
+        "username": "john_doe",
+        "email": "john@example.com",
+        "location": "New York",
+        "preferences": [
+            "Casual",
+            "Formal"
+        ],
+        "user_id": 9,
+        "date_joined": "2024-10-28T11:08:49"
+    }
 ]
 
-2. Retrieve a Specific Clothing Item by ID
-- **Endpoint**: GET /clothing_items/{item_id}
+2. Retrieve a Specific User by ID
+- **Endpoint**: GET /user/{user_id}
 - **Method**: GET
 - **URL Parameters**: 
-  - item_id: Replace {item_id} with an existing clothing item ID (e.g., 2).
+  - user_id: Replace {user_id} with an existing clothing item ID (e.g., 3).
 - **Output**: 
 {
-   "user_id": 1,
-   "type": "T-shirt",
-   "season": "Summer",
-   "fabric": "Cotton",
-   "color": "Blue",
-   "size": "M",
-   "tags": "casual",
-   "image_url": "http://example.com/tshirt.jpg"
+    "username": "john_doe",
+    "email": "john.doe@example.com",
+    "location": "New York",
+    "preferences": [
+        "casual",
+        "summer"
+    ],
+    "user_id": 3,
+    "date_joined": "2024-10-28T10:39:13"
 }
 
-3. Create a New Clothing Item
-- **Endpoint**: POST /clothing_items/
+3. Create a New User
+- **Endpoint**: POST /users/
 - **Method**: POST
 - **JSON Input**:
 {
-  "user_id": 1,
-  "type": "T-shirt",
-  "season": "Summer",
-  "fabric": "Cotton",
-  "color": "Blue",
-  "size": "L",
-  "tags": "casual, summer",
-  "image_url": "http://example.com/tshirt.jpg"
-}
-- **Output**: 
-{
-   "user_id": 1,
-   "type": "T-shirt",
-   "season": "Summer",
-   "fabric": "Cotton",
-   "color": "Blue",
-   "size": "L",
-   "tags": "casual, summer",
-   "image_url": "http://example.com/tshirt.jpg"
+    "username": "john_doe",
+    "email": "john.doe@example.com",
+    "password": "SecurePass123",
+    "location": "New York",
+    "preferences": ["casual", "summer"]
 }
 
-4. Update an Existing Clothing Item
-- **Endpoint**: PUT /clothing_items/{item_id}
+- **Output**: 
+{
+    "username": "john_doe",
+    "email": "john.doe@example.com",
+    "location": "New York",
+    "preferences": [
+        "casual",
+        "summer"
+    ],
+    "user_id": 3,
+    "date_joined": "2024-10-28T10:39:13"
+}
+
+4. Update an Existing User
+- **Endpoint**: PUT /user/{user_id}
 - **Method**: PUT
 - **URL Parameters**: 
-  - item_id: Replace {item_id} with an existing clothing item ID (e.g., 2).
+  - user_id: Replace {user_id} with an existing clothing item ID (e.g., 1).
 - **JSON Input**:
 {
-  "user_id": 1,
-  "type": "Updated T-shirt",
-  "season": "Summer",
-  "fabric": "Cotton",
-  "color": "Red",
-  "size": "M",
-  "tags": "casual, summer",
-  "image_url": "http://example.com/updated_tshirt.jpg"
-}
-- **Output**: 
-{
-   "user_id": 1,
-   "type": "Updated T-shirt",
-   "season": "Summer",
-   "fabric": "Cotton",
-   "color": "Red",
-   "size": "M",
-   "tags": "casual, summer",
-   "image_url": "http://example.com/updated_tshirt.jpg"
+    "username": "john_updated",
+    "email": "john_updated@example.com",
+    "location": "San Francisco",
+    "preferences": ["Sporty", "Casual"]
 }
 
-5. Delete a Clothing Item by ID
-- **Endpoint**: DELETE /clothing_items/{item_id}
+- **Output**: 
+{
+    "username": "john_updated",
+    "email": "john_updated@example.com",
+    "location": "San Francisco",
+    "preferences": [
+        "Sporty",
+        "Casual"
+    ],
+    "user_id": 1,
+    "date_joined": "2024-10-28T10:01:17"
+}
+
+5. Delete a User by ID
+- **Endpoint**: DELETE /user/{user_id}
 - **Method**: DELETE
 - **URL Parameters**: 
-  - item_id: Replace {item_id} with the ID of the clothing item you want to delete (e.g., 2).
+  - user_id: Replace {user_id} with the ID of the clothing item you want to delete (e.g., 3).
 - **Output**: 
 {
    "message": "Item deleted successfully"

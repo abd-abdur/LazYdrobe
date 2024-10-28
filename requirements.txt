@@ -6,7 +6,7 @@ python-dotenv
 fastapi
 uvicorn
 sqlalchemy
-pydantic
+pydantic>=2.0
 passlib[bcrypt]
 python-dotenv
 pymysql
