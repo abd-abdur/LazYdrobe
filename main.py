@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     DateTime,
     JSON,
+    Text,
     create_engine,
     func,
 )
@@ -105,6 +106,15 @@ class Outfit(Base):
     date_suggested = Column(DateTime, server_default=func.now())
 
     user = relationship("User", back_populates="outfits")
+    
+class FashionTrend(Base):
+    __tablename__ = "fashion_trends"
+    
+    trend_id = Column(Integer, primary_key=True, autoincrement=True)
+    trend_name = Column(String(255), nullable=False)
+    trend_description = Column(Text, nullable=False) 
+    date_added = Column(DateTime, server_default=func.now())
+
 
 # Create all tables
 Base.metadata.create_all(bind=engine)
