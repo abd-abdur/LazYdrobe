@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Create ecommerce_products table
 CREATE TABLE IF NOT EXISTS ecommerce_products (
-    product_id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id BIGINT AUTO_INCREMENT PRIMARY KEY,  -- Changed to BIGINT
     user_id INT NOT NULL,
     product_name VARCHAR(255) NOT NULL,
     suggested_item_type VARCHAR(255),
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS ecommerce_products (
 CREATE TABLE IF NOT EXISTS wardrobe_items (
     item_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    product_id INT,
+    product_id BIGINT,  -- Changed to BIGINT to match ecommerce_products
     clothing_type VARCHAR(255) NOT NULL,
     for_weather VARCHAR(255),
     color JSON,
@@ -61,4 +61,12 @@ CREATE TABLE IF NOT EXISTS outfits (
         REFERENCES users(user_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- Create fashion_trends table
+CREATE TABLE IF NOT EXISTS fashion_trends (
+    trend_id INT AUTO_INCREMENT PRIMARY KEY,
+    trend_name VARCHAR(255) NOT NULL,
+    trend_description TEXT NOT NULL,
+    date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
