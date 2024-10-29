@@ -92,11 +92,13 @@ Stores fashion trend data that helps inform outfit recommendations.
 
 ### **Relationships**
 - **User** to **Clothing**: One-to-Many (a user can have multiple clothing items in their wardrobe).
-- **Clothing** to **eCommerceProduct**: One-to-One (a clothing item may have a related e-commerce product).
-- **Outfit** to **Clothing**: One-to-Many (an outfit consists of multiple wardrobe items).
-- **Outfit** to **WeatherData**: One-to-One (outfits are suggested based on specific weather conditions).
-- **Outfit** to **Fashion**: Many-to-One (outfits may follow a specific fashion trend).
+- **Clothing** to **eCommerceProduct**: Many-to-One (many clothing items may share a related e-commerce product).
+- **Outfit** to **Clothing**: Many-to-Many (an outfit consists of multiple wardrobe items, clothing items can suit multiple outfits).
+- **Outfit** to **WeatherData**: Many-to-One (outfits are suggested based on specific weather conditions).
 - **WeatherData** to **Outfit**: Many-to-One (outfit suggestions are influenced by weather data).
+- **Outfit** to **Fashion**: Many-to-One (outfits may follow a specific fashion trend).
+- **Fasion** to **Outfit**: Many-to-One (fashion trends may share the same outfit).
+
 
 ### Why We Chose SQL for LazYdrobe
 
