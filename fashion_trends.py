@@ -87,8 +87,8 @@ def extract_refined_trends(text, max_tokens=4000):
             response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": "You are a fashion trends analyst. Summarize key fashion trends for fall 2024 from the given text."},
-                    {"role": "user", "content": f"Summarize key fashion trends for fall 2024 from this text: {chunk}"}
+                {"role": "system", "content": "You are a fashion trends analyst. Format your response as 'Trend Name: Trend Description' for each trend."},
+                {"role": "user", "content": f"List and describe key fashion trends for fall 2024, separating each trend name from its description with a colon: {text}"}
                 ],
                 max_tokens=1500
             )
