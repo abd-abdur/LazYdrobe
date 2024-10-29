@@ -70,3 +70,22 @@ CREATE TABLE IF NOT EXISTS fashion_trends (
     trend_description TEXT NOT NULL,
     date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
+
+
+-- Create weather_data table
+CREATE TABLE IF NOT EXISTS weather_data (
+    weather_id INT AUTO_INCREMENT PRIMARY KEY,
+    date DATETIME NOT NULL,
+    location VARCHAR(255) NOT NULL,
+    temp_max FLOAT NOT NULL,
+    temp_min FLOAT NOT NULL,
+    feels_max FLOAT NOT NULL,
+    feels_min FLOAT NOT NULL,
+    wind_speed FLOAT NOT NULL,
+    humidity FLOAT NOT NULL,
+    precipitation FLOAT NOT NULL,
+    precipitation_probability FLOAT NOT NULL,
+    special_condition VARCHAR(255),
+    user_id INT,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
+) ENGINE=InnoDB;

@@ -1,17 +1,8 @@
+# main.py
+
 from fastapi import FastAPI, HTTPException, Depends, status
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    Float,
-    ForeignKey,
-    DateTime,
-    JSON,
-    Text,
-    create_engine,
-    func,
-)
+from sqlalchemy import create_engine, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, Session
 from typing import List, Optional
@@ -20,6 +11,17 @@ from dotenv import load_dotenv
 from passlib.context import CryptContext
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
+
+# Import models from models.py
+from models import (
+    Base,
+    User,
+    EcommerceProduct,
+    WardrobeItem,
+    Outfit,
+    FashionTrend,
+    WeatherData
+)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -31,93 +33,12 @@ if not DATABASE_URL:
 
 # Create the SQLAlchemy engine using MySQL dialect
 engine = create_engine(DATABASE_URL, echo=True)
-
+Base.metadata.create_all(bind=engine)
 # Create a configured "Session" class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Base class for declarative models
-Base = declarative_base()
-
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# SQLAlchemy Models
-
-class User(Base):
-    __tablename__ = "users"
-    
-    user_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    username = Column(String(255), nullable=False)
-    email = Column(String(255), unique=True, nullable=False, index=True)
-    password = Column(String(255), nullable=False)
-    user_ip = Column(String(255))
-    location = Column(String(255))
-    preferences = Column(JSON, nullable=True)
-    date_joined = Column(DateTime, server_default=func.now())
-    
-    wardrobe_items = relationship("WardrobeItem", back_populates="owner", cascade="all, delete-orphan")
-    outfits = relationship("Outfit", back_populates="user", cascade="all, delete-orphan")
-    ecommerce_products = relationship("EcommerceProduct", back_populates="user", cascade="all, delete-orphan")
-
-
-class EcommerceProduct(Base):
-    __tablename__ = "ecommerce_products"
-    
-    product_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.user_id"))
-    product_name = Column(String(255), nullable=False)
-    suggested_item_type = Column(String(255), nullable=True)
-    price = Column(Float, nullable=False)
-    product_url = Column(String(255), nullable=False)
-    image_url = Column(String(255), nullable=True)
-    date_suggested = Column(DateTime, server_default=func.now())
-    
-    user = relationship("User", back_populates="ecommerce_products")
-    wardrobe_items = relationship("WardrobeItem", back_populates="product")
-
-
-class WardrobeItem(Base):
-    __tablename__ = "wardrobe_items"
-    
-    item_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.user_id"))
-    product_id = Column(Integer, ForeignKey("ecommerce_products.product_id"), nullable=True)
-    clothing_type = Column(String(255), nullable=False)
-    for_weather = Column(String(255), nullable=True)
-    color = Column(JSON, nullable=True)
-    size = Column(String(50), nullable=True)
-    tags = Column(JSON, nullable=True)
-    image_url = Column(String(255), nullable=True)
-    date_added = Column(DateTime, server_default=func.now())
-
-    owner = relationship("User", back_populates="wardrobe_items")
-    product = relationship("EcommerceProduct", back_populates="wardrobe_items")
-
-
-class Outfit(Base):
-    __tablename__ = "outfits"
-    
-    outfit_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.user_id"))
-    clothings = Column(JSON, nullable=False)
-    occasion = Column(JSON, nullable=True)
-    for_weather = Column(String(255), nullable=True)
-    source_url = Column(String(255), nullable=True)
-    date_suggested = Column(DateTime, server_default=func.now())
-
-    user = relationship("User", back_populates="outfits")
-    
-class FashionTrend(Base):
-    __tablename__ = "fashion_trends"
-    
-    trend_id = Column(Integer, primary_key=True, autoincrement=True)
-    trend_name = Column(String(1000), nullable=False)
-    trend_description = Column(Text, nullable=False) 
-    date_added = Column(DateTime, server_default=func.now())
-
-
-# Create all tables
-Base.metadata.create_all(bind=engine)
 
 # Pydantic Schemas
 
@@ -140,6 +61,34 @@ class UserResponse(UserBase):
     date_joined: datetime
 
     class Config:
+        from_attributes = True
+
+
+class WeatherDataBase(BaseModel):
+    date: datetime
+    location: str
+    temp_max: float
+    temp_min: float
+    feels_max: float
+    feels_min: float
+    wind_speed: float
+    humidity: float
+    precipitation: float
+    precipitation_probability: float
+    special_condition: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+
+class WeatherDataCreate(WeatherDataBase):
+    pass
+
+
+class WeatherDataResponse(WeatherDataBase):
+    weather_id: int
+
+    class Config:
         orm_mode = True
 
 
@@ -150,6 +99,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -229,3 +179,19 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     db.delete(user)
     db.commit()
     return {"detail": "User deleted successfully."}
+
+# Weather Api routes
+@app.post("/weather/", response_model=WeatherDataResponse, status_code=status.HTTP_201_CREATED)
+def create_weather_entry(weather: WeatherDataCreate, db: Session = Depends(get_db)):
+    db_weather = WeatherData(**weather.dict())
+    db.add(db_weather)
+    db.commit()
+    db.refresh(db_weather)
+    return db_weather
+
+@app.get("/weather/{weather_id}", response_model=WeatherDataResponse)
+def get_weather_entry(weather_id: int, db: Session = Depends(get_db)):
+    weather_entry = db.query(WeatherData).filter(WeatherData.weather_id == weather_id).first()
+    if not weather_entry:
+        raise HTTPException(status_code=404, detail="Weather entry not found.")
+    return weather_entry
