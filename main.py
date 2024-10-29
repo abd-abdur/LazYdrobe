@@ -111,7 +111,7 @@ class FashionTrend(Base):
     __tablename__ = "fashion_trends"
     
     trend_id = Column(Integer, primary_key=True, autoincrement=True)
-    trend_name = Column(String(255), nullable=False)
+    trend_name = Column(String(1000), nullable=False)
     trend_description = Column(Text, nullable=False) 
     date_added = Column(DateTime, server_default=func.now())
 
