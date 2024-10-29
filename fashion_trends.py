@@ -90,7 +90,7 @@ def extract_refined_trends(text, max_tokens=4000):
                     {"role": "system", "content": "You are a fashion trends analyst. Summarize key fashion trends for fall 2024 from the given text."},
                     {"role": "user", "content": f"Summarize key fashion trends for fall 2024 from this text: {chunk}"}
                 ],
-                max_tokens=1000
+                max_tokens=1500
             )
             all_trends.append(response.choices[0].message.content)
         except Exception as e:
@@ -119,6 +119,9 @@ def save_trends_to_db(trend_dict):
     session = SessionLocal()
     try:
         for trend_name, trend_description in trend_dict.items():
+            # Truncate trend_name if it's too long
+            if len(trend_name) > 1000:
+                trend_name = trend_name[:997] + "..."
             trend = FashionTrend(trend_name=trend_name, trend_description=trend_description)
             session.add(trend)
         session.commit()

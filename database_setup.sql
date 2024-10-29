@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS outfits (
 -- Create fashion_trends table
 CREATE TABLE IF NOT EXISTS fashion_trends (
     trend_id INT AUTO_INCREMENT PRIMARY KEY,
-    trend_name VARCHAR(255) NOT NULL,
+    trend_name VARCHAR(1000) NOT NULL,
     trend_description TEXT NOT NULL,
     date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
