@@ -1,0 +1,10 @@
+/* Wardrobe.css */
+.wardrobe {
+  padding: 20px;
+}
+
+.wardrobe-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
