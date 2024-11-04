@@ -1,0 +1,17 @@
+/* Navbar.css */
+.navbar {
+  display: flex;
+  gap: 20px;
+  background-color: #333;
+  padding: 10px;
+}
+
+.navbar a {
+  color: white;
+  text-decoration: none;
+}
+
+.active-link {
+  font-weight: bold;
+  color: yellow;
+}
