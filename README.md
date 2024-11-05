@@ -151,26 +151,47 @@ Relationship Management: Defines foreign key constraints to maintain data integr
 
 ### Step 1: Clone the Repository
 First, clone the repository where the SQL script is stored. This will allow you to access the SQL file required to set up the database.
+```
 git clone https://github.com/abd-abdur/LazYdrobe.git
+```
 
 ### Step 2: Navigate to the Project Directory
 After cloning the repository, navigate to the directory containing the project.
+```
 cd path/to/LazYdrobe
+```
 
 ### Step 3: Set Up a Virtual Environment
 For Python-based projects, it's recommended to use a virtual environment to isolate project dependencies.
-```python -m venv .venv```
+```
+python -m venv .venv
+```
 
 Activate the virtual environment:
 On Windows: 
-```.\.venv\Scripts\activate```
+```
+.\.venv\Scripts\activate
+```
 On macOS/Linux: source 
-```.venv/bin/activate```
+```
+.venv/bin/activate
+```
 
 ### Step 4: Install Required Dependencies
 Install the required packages from the requirements.txt file.
-```pip install -r requirements.txt```
-### Step 5: Launch Your Database Management System (DBMS)
+```
+pip install -r requirements.txt
+```
+
+### Step 5: Create a .env file in the project root directory
+Add the following fields:
+- DATABASE_URL
+- visualcrossing_API_KEY
+- OpenAI_API_Key
+- ebay_API_KEY
+
+
+### Step 6: Launch Your Database Management System (DBMS)
 You need to use a SQL-compatible DBMS like PostgreSQL, MySQL, MariaDB, or similar. Open your DBMS and navigate to the query editor.
 
 Popular choices:
@@ -179,7 +200,7 @@ pgAdmin (PostgreSQL): For PostgreSQL databases (what we have chosen!)
 MySQL Workbench: For MySQL databases.
 phpMyAdmin: A web-based tool for managing MySQL databases.
 
-### Step 6: Run the SQL Script to Set Up the Database
+### Step 7: Run the SQL Script to Set Up the Database
 In your DBMS query editor:
 
 Locate the provided SQL script named database_setup.sql inside the repository: path/to/LazYdrobe/database_setup.sql.
