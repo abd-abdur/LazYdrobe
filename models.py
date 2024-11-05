@@ -1,5 +1,3 @@
-# models.py
-
 from sqlalchemy import (
     Column,
     Integer,
@@ -46,6 +44,12 @@ class EcommerceProduct(Base):
     image_url = Column(String(255), nullable=True)
     date_suggested = Column(DateTime, server_default=func.now())
     
+    # Add a foreign key to the User table
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
+    
+    # Define the relationship to the User model
+    user = relationship("User", back_populates="ecommerce_products")
+
     wardrobe_items = relationship("WardrobeItem", back_populates="product")
 
 
@@ -109,4 +113,3 @@ class WeatherData(Base):
     
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
     user = relationship("User", back_populates="weather_data")
-
