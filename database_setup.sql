@@ -13,17 +13,12 @@ CREATE TABLE IF NOT EXISTS users (
 -- Create ecommerce_products table
 CREATE TABLE IF NOT EXISTS ecommerce_products (
     product_id BIGINT AUTO_INCREMENT PRIMARY KEY,  -- Changed to BIGINT
-    user_id INT NOT NULL,
     product_name VARCHAR(255) NOT NULL,
     suggested_item_type VARCHAR(255),
     price FLOAT,
     product_url VARCHAR(255),
     image_url VARCHAR(255),
     date_suggested TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_user_ecommerce FOREIGN KEY (user_id)
-        REFERENCES users(user_id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 -- Create wardrobe_items table
@@ -68,6 +63,9 @@ CREATE TABLE IF NOT EXISTS fashion_trends (
     trend_id INT AUTO_INCREMENT PRIMARY KEY,
     trend_name VARCHAR(1000) NOT NULL,
     trend_description TEXT NOT NULL,
+    occasion JSON,
+    outfits JSON,
+    example_url VARCHAR(255),
     date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
@@ -86,6 +84,4 @@ CREATE TABLE IF NOT EXISTS weather_data (
     precipitation FLOAT NOT NULL,
     precipitation_probability FLOAT NOT NULL,
     special_condition VARCHAR(255),
-    user_id INT,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
