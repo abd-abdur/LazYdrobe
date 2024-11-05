@@ -45,6 +45,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
+    user_ip: Optional[str] = None
     location: Optional[str] = None
     preferences: Optional[List[str]] = None
 
@@ -126,6 +127,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         username=user.username,
         email=user.email,
         password=hashed_pwd,
+        user_ip=user.user_ip,
         location=user.location,
         preferences=user.preferences
     )
@@ -158,6 +160,7 @@ def update_user(user_id: int, user_update: UserBase, db: Session = Depends(get_d
     
     user.username = user_update.username
     user.email = user_update.email
+    user.user_ip = user_update.user_ip
     user.location = user_update.location
     user.preferences = user_update.preferences
     
