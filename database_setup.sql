@@ -63,7 +63,6 @@ CREATE TABLE IF NOT EXISTS fashion_trends (
     trend_id INT AUTO_INCREMENT PRIMARY KEY,
     trend_name VARCHAR(1000) NOT NULL,
     trend_description TEXT NOT NULL,
-    occasion JSON,
     outfits JSON,
     example_url VARCHAR(255),
     date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP
