@@ -1,46 +1,53 @@
 # Frontend Guide - LazyDrobe
-This guide provides instructions on how to set up, run, and understand the front-end code for the LazyDrobe application. 
-LazyDrobe is a React-based wardrobe management app that allows users to manage their clothing items, receive outfit suggestions, and shop for recommended items.
+This guide provides instructions on how to set up, run, and understand the front-end code for the LazyDrobe application. LazyDrobe is a React-based wardrobe management app that allows users to manage clothing items, receive outfit suggestions, and shop for recommended items.
 
 ## Prerequisites
-Before running this code, make sure you have the following installed:
+Before running this code, ensure you have the following installed:
 
 Node.js (version 14.x or higher)
-npm or yarn (npm is included with Node.js)
+npm (included with Node.js) or yarn
 
 ## Getting Started
 Follow these steps to set up and run the front-end code on your local machine.
 
-### Clone the Repository
-Start by cloning the repository to your local machine:
-git clone https://github.com/username/lazydrobe.git
-Replace username with your GitHub username if you forked the repository.
+### 1. Clone the Repository
+Clone the repository to your local machine:
 
-### Navigate into the Project Directory
-Change into the project’s directory:
+bash
+Copy code
+git clone https://github.com/username/lazydrobe.git
+Note: Replace username with your GitHub username if you forked the repository.
+
+### 2. Navigate into the Project Directory
+Change to the project’s directory:
+
+
 cd lazydrobe
 
-### Install Dependencies
-Install the required dependencies using npm or yarn:
-Using npm
+### 3. Install Dependencies
+Install the necessary packages using npm or yarn:
+
+
+#### Using npm
 npm install
 
-OR 
-
-using yarn
+#### OR using yarn
 yarn install
-This will install all the necessary packages, including react, react-router-dom, and react-modal.
+This will install all required packages, including react, react-router-dom, and react-modal.
 
-### Start the Application
+### 4. Start the Application
+Start the development server:
 
-Using npm
+#### Using npm
 npm start
 
-OR using yarn
+#### OR using yarn
 yarn start
-This command will open a new tab in your browser with the app running at http://localhost:3000. If it doesn’t open automatically, navigate to http://localhost:3000 manually.
+After starting, the app should open automatically in your browser at http://localhost:3000. If it doesn’t, open the link manually.
 
 ## Project Structure
+Here's an overview of the project directory structure:
+
 lazydrobe/
 ├── public/
 │   └── index.html               # Main HTML file for the React app
@@ -56,30 +63,30 @@ lazydrobe/
 │   │   ├── Footer.css           # CSS for Footer
 │   │   ├── Wardrobe.css         # CSS for Wardrobe screen
 │   │   ├── WardrobeItem.css     # CSS for individual wardrobe items
-│   │   └── OutfitSuggestions.css# CSS for outfit suggestions
+│   │   └── OutfitSuggestions.css # CSS for outfit suggestions
 │   ├── App.js                   # Main app component with routes
 │   ├── index.js                 # Entry point to render the app
 │   └── App.css                  # Global styles
-├── .gitignore                   # File to exclude unnecessary files from Git
-├── README.md                    # General overview and instructions for the project
-├── frontend.md                  # Front-end guide (this file)
+├── .gitignore                   # Excludes unnecessary files from Git
+├── README.md                    # General project overview and instructions
+├── frontend.md                  # Front-end setup guide (this file)
 ├── package.json                 # Lists dependencies and scripts
 └── package-lock.json            # Locks dependencies to specific versions
 
 ## Key Components
-Navbar (Navbar.js): Displays navigation links for the app.
-Footer (Footer.js): Displays the footer with copyright information.
-Wardrobe (Wardrobe.js): Displays the wardrobe items, with filtering functionality.
+Here are the main components and their purposes:
+
+Navbar (Navbar.js): Displays the navigation links for the app.
+Footer (Footer.js): Shows copyright information.
+Wardrobe (Wardrobe.js): Displays wardrobe items with filtering functionality.
 WardrobeItem (WardrobeItem.js): Represents individual wardrobe items.
-WardrobeModal (WardrobeModal.js): Modal for adding or editing wardrobe items.
+WardrobeModal (WardrobeModal.js): Modal for adding/editing wardrobe items.
 OutfitSuggestions (OutfitSuggestions.js): Displays outfit recommendations based on weather.
 
 ## Additional Notes
-Styling: Each component has its own .css file located in src/components. This keeps styles modular and specific to each component.
-
-Routing: The app uses react-router-dom for client-side routing. Routes are defined in App.js, which manages navigation to different parts of the application.
-
-Modal Library: react-modal is used to create the add/edit modal for wardrobe items. You may need to run npm install react-modal if it’s not installed automatically.
+Styling: Each component has its own .css file in the src/components folder, keeping styles modular and specific to each component.
+Routing: The app uses react-router-dom for client-side routing. Routes are defined in App.js, which manages navigation between different parts of the application.
+Modal Library: react-modal is used to create the add/edit modal for wardrobe items. If it’s not installed automatically, run npm install react-modal.
 
 ## Available Scripts
 In the project directory, you can run:
@@ -89,7 +96,15 @@ npm run build: Builds the app for production to the build folder.
 npm test: Launches the test runner.
 
 ## Troubleshooting
-If you encounter issues with npm install, ensure that you have the latest version of Node.js and npm.
-If the app doesn’t load in the browser, check if the development server is running on http://localhost:3000 and that no other app is using this port.
+Dependency Issues: If you encounter issues during npm install, make sure you have the latest version of Node.js and npm installed.
+Development Server: If the app doesn’t load in the browser, confirm that the development server is running on http://localhost:3000 and that no other app is using this port.
 
+## Contributing
+To contribute to LazyDrobe, follow these steps:
 
+Fork the repository.
+Create a new branch (git checkout -b feature-branch).
+Make your changes.
+Commit your changes (git commit -m "Add new feature").
+Push to the branch (git push origin feature-branch).
+Open a pull request.
