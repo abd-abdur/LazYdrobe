@@ -67,11 +67,11 @@ lazydrobe/
 │   ├── App.js                   # Main app component with routes
 │   ├── index.js                 # Entry point to render the app
 │   └── App.css                  # Global styles
-├── .gitignore                   # Excludes unnecessary files from Git
-├── README.md                    # General project overview and instructions
-├── frontend.md                  # Front-end setup guide (this file)
+├── .gitignore                   # File to exclude unnecessary files from Git
+├── README.md                    # General overview and instructions for the project
 ├── package.json                 # Lists dependencies and scripts
 └── package-lock.json            # Locks dependencies to specific versions
+
 
 ## Key Components
 Here are the main components and their purposes:
