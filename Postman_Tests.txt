@@ -8,6 +8,7 @@ Postman Tests for API Endpoints
     {
         "username": "user_a",
         "email": "user_a@example.com",
+        "user_ip": "24.97.8.0",
         "location": "NY, USA",
         "preferences": [
             "Black"
@@ -18,6 +19,7 @@ Postman Tests for API Endpoints
     {
         "username": "user_b",
         "email": "user_b@example.com",
+        "user_ip": "178.238.11.6",
         "location": "London, UK",
         "preferences": [
             "Long coat"
@@ -28,6 +30,7 @@ Postman Tests for API Endpoints
     {
         "username": "john_doe",
         "email": "john.doe@example.com",
+        "user_ip": "24.97.8.0",
         "location": "New York",
         "preferences": [
             "casual",
@@ -39,6 +42,7 @@ Postman Tests for API Endpoints
     {
         "username": "jane_doe",
         "email": "jane.doe@example.com",
+        "user_ip": "104.174.125.138",
         "location": "Los Angeles",
         "preferences": [
             "formal",
@@ -50,6 +54,7 @@ Postman Tests for API Endpoints
     {
         "username": "john_doe",
         "email": "john@example.com",
+        "user_ip": "24.97.8.0",
         "location": "New York",
         "preferences": [
             "Casual",
@@ -69,6 +74,7 @@ Postman Tests for API Endpoints
 {
     "username": "john_doe",
     "email": "john.doe@example.com",
+    "user_ip": "24.97.8.0",
     "location": "New York",
     "preferences": [
         "casual",
@@ -86,6 +92,7 @@ Postman Tests for API Endpoints
     "username": "john_doe",
     "email": "john.doe@example.com",
     "password": "SecurePass123",
+    "user_ip": "24.97.8.0",
     "location": "New York",
     "preferences": ["casual", "summer"]
 }
@@ -94,6 +101,7 @@ Postman Tests for API Endpoints
 {
     "username": "john_doe",
     "email": "john.doe@example.com",
+    "user_ip": "24.97.8.0",
     "location": "New York",
     "preferences": [
         "casual",
@@ -112,6 +120,7 @@ Postman Tests for API Endpoints
 {
     "username": "john_updated",
     "email": "john_updated@example.com",
+    "user_ip": "216.73.163.219",
     "location": "San Francisco",
     "preferences": ["Sporty", "Casual"]
 }
@@ -120,6 +129,7 @@ Postman Tests for API Endpoints
 {
     "username": "john_updated",
     "email": "john_updated@example.com",
+    "user_ip": "216.73.163.219",
     "location": "San Francisco",
     "preferences": [
         "Sporty",
