@@ -21,25 +21,37 @@ Follow these steps to set up the LazYdrobe project locally:
 
 ### Step 1: Clone the Repository
 First, clone the repository where the SQL script is stored. This will allow you to access the SQL file required to set up the database.
+```
 git clone https://github.com/abd-abdur/LazYdrobe.git
+```
 
 ### Step 2: Navigate to the Project Directory
 After cloning the repository, navigate to the directory containing the project.
+```
 cd path/to/LazYdrobe
+```
 
 ### Step 3: Set Up a Virtual Environment
 For Python-based projects, it's recommended to use a virtual environment to isolate project dependencies.
-```python -m venv .venv```
+```
+python -m venv .venv
+```
 
 Activate the virtual environment:
 On Windows: 
-```.\.venv\Scripts\activate```
+```
+.\.venv\Scripts\activate
+```
 On macOS/Linux: source 
-```.venv/bin/activate```
+```
+.venv/bin/activate
+```
 
 ### Step 4: Install Required Dependencies
 Install the required packages from the requirements.txt file.
-```pip install -r requirements.txt```
+```
+pip install -r requirements.txt
+```
 
 ### Step 5: Configure Database Connection
 Ensure that the database credentials in main.py (or a separate configuration file) match your local database setup.
@@ -93,6 +105,7 @@ Follow the structure below for each request:
     "username": "john_doe",
     "email": "john.doe@example.com",
     "password": "SecurePass123",
+    "user_ip": "24.97.8.0",
     "location": "New York",
     "preferences": ["casual", "summer"]
     }
@@ -107,6 +120,7 @@ Follow the structure below for each request:
     {
     "username": "john_updated",
     "email": "john_updated@example.com",
+    "user_ip": "216.73.163.219",
     "location": "San Francisco",
     "preferences": ["Sporty", "Casual"]
     }
