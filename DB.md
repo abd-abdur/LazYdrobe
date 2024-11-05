@@ -148,13 +148,19 @@ For Python-based projects, it's recommended to use a virtual environment to isol
 
 Activate the virtual environment:
 On Windows: 
-```.\.venv\Scripts\activate```
+```
+.\.venv\Scripts\activate
+```
 On macOS/Linux: source 
-```.venv/bin/activate```
+```
+.venv/bin/activate
+```
 
 ### Step 4: Install Required Dependencies
 Install the required packages from the requirements.txt file.
-```pip install -r requirements.txt```
+```
+pip install -r requirements.txt
+```
 ### Step 5: Launch Your Database Management System (DBMS)
 You need to use a SQL-compatible DBMS like PostgreSQL, MySQL, MariaDB, or similar. Open your DBMS and navigate to the query editor.
 
