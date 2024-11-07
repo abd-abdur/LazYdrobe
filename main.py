@@ -94,7 +94,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust this in production (e.g., ["http://localhost:3000"])
+    allow_origins=["http://localhost:3000"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -110,11 +110,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 # API Routes
 
 ## User Registration
+
 @app.post("/users/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     hashed_pwd = hash_password(user.password)
-    # Store preferences as a comma-separated string or an empty string
-    preferences_str = ','.join(user.preferences) if user.preferences else ''
+    
+    # Store preferences as an empty list if not provided, or as a comma-separated string
+    preferences_str = ','.join(user.preferences) if user.preferences else None
+    
     db_user = User(
         username=user.username,
         email=user.email,
@@ -123,6 +126,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         location=user.location,
         preferences=preferences_str
     )
+    
     db.add(db_user)
     try:
         db.commit()
@@ -132,18 +136,42 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email already registered.")
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Internal server error.")
-    return db_user
+        raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
+    
+    # Ensure preferences is returned as a list in the response
+    preferences_list = db_user.preferences.split(',') if db_user.preferences else []
+    
+    return UserResponse(
+        user_id=db_user.user_id,
+        username=db_user.username,
+        email=db_user.email,
+        user_ip=db_user.user_ip,
+        location=db_user.location,
+        preferences=preferences_list,
+        date_joined=db_user.date_joined
+    )
+
+
 
 ## User Login
 @app.post("/login", response_model=LoginResponse)
 def login(request: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == request.email).first()
+    try:
+        user = db.query(User).filter(User.email == request.email).first()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database query failed: {str(e)}")
+    
     if not user:
         raise HTTPException(status_code=400, detail="Invalid email or password.")
-    if not verify_password(request.password, user.password):
-        raise HTTPException(status_code=400, detail="Invalid email or password.")
+    
+    try:
+        if not verify_password(request.password, user.password):
+            raise HTTPException(status_code=400, detail="Invalid email or password.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Password verification failed: {str(e)}")
+    
     return LoginResponse(user_id=user.user_id, username=user.username, email=user.email)
+
 
 ## Get User by ID
 @app.get("/users/{user_id}", response_model=UserResponse)
