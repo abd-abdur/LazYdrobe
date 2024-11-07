@@ -1,10 +1,11 @@
 # main.py
 
 from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import create_engine, func
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship, Session
+from sqlalchemy.orm import sessionmaker, Session
 from typing import List, Optional
 import os
 from dotenv import load_dotenv
@@ -31,9 +32,10 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL is not set in the environment variables.")
 
-# Create the SQLAlchemy engine using MySQL dialect
+# Create the SQLAlchemy engine
 engine = create_engine(DATABASE_URL, echo=True)
 Base.metadata.create_all(bind=engine)
+
 # Create a configured "Session" class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -41,7 +43,6 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Pydantic Schemas
-
 class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
@@ -52,46 +53,28 @@ class UserBase(BaseModel):
     class Config:
         orm_mode = True
 
-
 class UserCreate(UserBase):
     password: str = Field(..., min_length=6)
-
 
 class UserResponse(UserBase):
     user_id: int
     date_joined: datetime
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
+# Login Models
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
 
-class WeatherDataBase(BaseModel):
-    date: datetime
-    location: str
-    temp_max: float
-    temp_min: float
-    feels_max: float
-    feels_min: float
-    wind_speed: float
-    humidity: float
-    precipitation: float
-    precipitation_probability: float
-    special_condition: Optional[str] = None
+class LoginResponse(BaseModel):
+    user_id: int
+    username: str
+    email: EmailStr
 
     class Config:
         orm_mode = True
-
-
-class WeatherDataCreate(WeatherDataBase):
-    pass
-
-
-class WeatherDataResponse(WeatherDataBase):
-    weather_id: int
-
-    class Config:
-        orm_mode = True
-
 
 # Dependency to get DB session
 def get_db():
@@ -101,12 +84,20 @@ def get_db():
     finally:
         db.close()
 
-
 # Initialize FastAPI app
 app = FastAPI(
     title="LazYdrobe API",
     description="API for LazYdrobe Wardrobe Management Application",
     version="1.0.0"
+)
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust this in production (e.g., ["http://localhost:3000"])
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Utility Functions
@@ -118,18 +109,19 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 # API Routes
 
-## Users Endpoints
-
+## User Registration
 @app.post("/users/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     hashed_pwd = hash_password(user.password)
+    # Store preferences as a comma-separated string or an empty string
+    preferences_str = ','.join(user.preferences) if user.preferences else ''
     db_user = User(
         username=user.username,
         email=user.email,
         password=hashed_pwd,
         user_ip=user.user_ip,
         location=user.location,
-        preferences=user.preferences
+        preferences=preferences_str
     )
     db.add(db_user)
     try:
@@ -138,63 +130,40 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=400, detail="Email already registered.")
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Internal server error.")
     return db_user
 
-@app.get("/users/", response_model=List[UserResponse])
-def read_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    users = db.query(User).offset(skip).limit(limit).all()
-    return users
+## User Login
+@app.post("/login", response_model=LoginResponse)
+def login(request: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid email or password.")
+    if not verify_password(request.password, user.password):
+        raise HTTPException(status_code=400, detail="Invalid email or password.")
+    return LoginResponse(user_id=user.user_id, username=user.username, email=user.email)
 
+## Get User by ID
 @app.get("/users/{user_id}", response_model=UserResponse)
 def read_user(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
-    return user
-
-@app.put("/users/{user_id}", response_model=UserResponse)
-def update_user(user_id: int, user_update: UserBase, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.user_id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found.")
     
-    user.username = user_update.username
-    user.email = user_update.email
-    user.user_ip = user_update.user_ip
-    user.location = user_update.location
-    user.preferences = user_update.preferences
+    # Convert preferences from string to list
+    if user.preferences:
+        preferences_list = user.preferences.split(',') if user.preferences else []
+    else:
+        preferences_list = []
     
-    try:
-        db.commit()
-        db.refresh(user)
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Email already registered.")
-    
-    return user
-
-@app.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_user(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.user_id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found.")
-    
-    db.delete(user)
-    db.commit()
-    return {"detail": "User deleted successfully."}
-
-# Weather Api routes
-@app.post("/weather/", response_model=WeatherDataResponse, status_code=status.HTTP_201_CREATED)
-def create_weather_entry(weather: WeatherDataCreate, db: Session = Depends(get_db)):
-    db_weather = WeatherData(**weather.dict())
-    db.add(db_weather)
-    db.commit()
-    db.refresh(db_weather)
-    return db_weather
-
-@app.get("/weather/{weather_id}", response_model=WeatherDataResponse)
-def get_weather_entry(weather_id: int, db: Session = Depends(get_db)):
-    weather_entry = db.query(WeatherData).filter(WeatherData.weather_id == weather_id).first()
-    if not weather_entry:
-        raise HTTPException(status_code=404, detail="Weather entry not found.")
-    return weather_entry
+    return UserResponse(
+        user_id=user.user_id,
+        username=user.username,
+        email=user.email,
+        user_ip=user.user_ip,
+        location=user.location,
+        preferences=preferences_list,
+        date_joined=user.date_joined
+    )
