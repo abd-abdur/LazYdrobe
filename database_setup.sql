@@ -83,4 +83,5 @@ CREATE TABLE IF NOT EXISTS weather_data (
     precipitation FLOAT NOT NULL,
     precipitation_probability FLOAT NOT NULL,
     special_condition VARCHAR(255),
+    weather_icon VARCHAR(255)
 ) ENGINE=InnoDB;

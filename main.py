@@ -47,7 +47,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Adjust based on your frontend's origin
+    allow_origins=["*"],  # Adjust based on your frontend's origin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -162,8 +162,7 @@ def fetch_weather_data(api_key: str, location_part1: str, location_part2: Option
     # URL-encode the location to handle spaces and special characters
     location_encoded = requests.utils.quote(location)
 
-    # Update the endpoint from 'next5days' to 'today'
-    url = f'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{location_encoded}/today?key={api_key}&unitGroup=us&include=days&elements=datetime,tempmax,tempmin,feelslikemax,feelslikemin,windspeed,humidity,precip,precipprob,conditions'
+    url = f'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{location_encoded}/next5days?key={api_key}&unitGroup=us&iconSet=icons2&include=days&elements=datetime,tempmax,tempmin,feelslikemax,feelslikemin,windspeed,humidity,precip,precipprob,conditions'
     response = requests.get(url)
 
     if response.status_code != 200:
@@ -191,12 +190,60 @@ def fetch_weather_data(api_key: str, location_part1: str, location_part2: Option
             'humidity': day.get('humidity', 0.0),
             'precipitation': day.get('precip', 0.0),
             'precipitation_probability': day.get('precipprob', 0.0),
-            'special_condition': day.get('conditions', 'Unknown')
+            'special_condition': day.get('conditions', 'Unknown'),
+            'weather_icon': day.get('weather_icon', '')
         }
         weather_entries.append(weather_entry)
 
     return weather_entries
 
+def fetch_today_weather_data(api_key: str, location_part1: str, location_part2: Optional[str] = None) -> List[dict]:
+    """
+    Fetch weather data for today from Visual Crossing API.
+    """
+    if location_part2:
+        location = f"{location_part1},{location_part2}"
+    else:
+        location = location_part1
+
+    # URL-encode the location to handle spaces and special characters
+    location_encoded = requests.utils.quote(location)
+
+    # Update the endpoint from 'next5days' to 'today'
+    url = f'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{location_encoded}/today?key={api_key}&unitGroup=us&iconSet=icons2&include=days&elements=datetime,tempmax,tempmin,feelslikemax,feelslikemin,windspeed,humidity,precip,precipprob,conditions'
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        error_message = response.text
+        logger.error(f"Failed to fetch weather data. Status Code: {response.status_code}, Message: {error_message}")
+        raise HTTPException(status_code=response.status_code, detail=error_message)
+
+    data = response.json()
+    if 'days' not in data or not data['days']:
+        logger.error("No weather data available for today.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No weather data available for today.")
+
+    # Structure data for DB insertion
+    weather_entries = []
+    for day in data["days"]:
+        # Handle missing fields with default values
+        weather_entry = {
+            'date': datetime.strptime(day['datetime'], "%Y-%m-%d"),
+            'location': location,
+            'temp_max': day.get('tempmax', 0.0),
+            'temp_min': day.get('tempmin', 0.0),
+            'feels_max': day.get('feelslikemax', 0.0),
+            'feels_min': day.get('feelslikemin', 0.0),
+            'wind_speed': day.get('windspeed', 0.0),
+            'humidity': day.get('humidity', 0.0),
+            'precipitation': day.get('precip', 0.0),
+            'precipitation_probability': day.get('precipprob', 0.0),
+            'special_condition': day.get('conditions', 'Unknown'),
+            'weather_icon': day.get('weather_icon')
+        }
+        weather_entries.append(weather_entry)
+
+    return weather_entries
 
 def insert_weather_data_to_db(data: List[dict], user_id: Optional[int] = None):
     """
@@ -222,6 +269,7 @@ def insert_weather_data_to_db(data: List[dict], user_id: Optional[int] = None):
                 precipitation=entry['precipitation'],
                 precipitation_probability=entry['precipitation_probability'],
                 special_condition=entry['special_condition'],
+                weather_icon=entry['weather_icon'],
                 user_id=user_id
             )
             db.add(weather_record)
