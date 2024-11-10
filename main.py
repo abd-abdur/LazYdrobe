@@ -162,8 +162,9 @@ def fetch_weather_data(api_key: str, location_part1: str, location_part2: Option
     # URL-encode the location to handle spaces and special characters
     location_encoded = requests.utils.quote(location)
 
-    url = f'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{location_encoded}/next5days?key={api_key}&unitGroup=us&iconSet=icons2&include=days&elements=datetime,tempmax,tempmin,feelslikemax,feelslikemin,windspeed,humidity,precip,precipprob,conditions'
+    url = f'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{location_encoded}/next5days?key={api_key}&unitGroup=us&iconSet=icons2'
     response = requests.get(url)
+    print(url)
 
     if response.status_code != 200:
         error_message = response.text
@@ -191,7 +192,7 @@ def fetch_weather_data(api_key: str, location_part1: str, location_part2: Option
             'precipitation': day.get('precip', 0.0),
             'precipitation_probability': day.get('precipprob', 0.0),
             'special_condition': day.get('conditions', 'Unknown'),
-            'weather_icon': day.get('weather_icon', '')
+            'weather_icon': day.get('icon', '')
         }
         weather_entries.append(weather_entry)
 
@@ -239,7 +240,7 @@ def fetch_today_weather_data(api_key: str, location_part1: str, location_part2: 
             'precipitation': day.get('precip', 0.0),
             'precipitation_probability': day.get('precipprob', 0.0),
             'special_condition': day.get('conditions', 'Unknown'),
-            'weather_icon': day.get('weather_icon')
+            'weather_icon': day.get('weather_icon', '')
         }
         weather_entries.append(weather_entry)
 
