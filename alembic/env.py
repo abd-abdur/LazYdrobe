@@ -1,3 +1,5 @@
+# alembic/env.py
+
 import os
 import sys
 from logging.config import fileConfig
@@ -12,7 +14,7 @@ load_dotenv()
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import the Base from models.py
-from models import Base
+from models import Base  # Ensure this path is correct
 
 # Set up Alembic configuration
 config = context.config
