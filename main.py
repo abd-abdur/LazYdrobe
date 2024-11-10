@@ -113,6 +113,7 @@ class WeatherResponse(BaseModel):
     precipitation: float
     precipitation_probability: float
     special_condition: str
+    weather_icon: str
 
     class Config:
         orm_mode = True
