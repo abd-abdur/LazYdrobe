@@ -110,6 +110,7 @@ class WeatherData(Base):
     precipitation = Column(Float, nullable=False)
     precipitation_probability = Column(Float, nullable=False)
     special_condition = Column(String(255), nullable=True)
+    weather_icon = Column(String(255), nullable=True)
     
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
     user = relationship("User", back_populates="weather_data")
