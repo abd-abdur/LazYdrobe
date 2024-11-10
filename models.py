@@ -1,3 +1,4 @@
+# models.py
 from sqlalchemy import (
     Column,
     Integer,
@@ -17,7 +18,7 @@ Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
-    
+
     user_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     username = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
@@ -26,16 +27,15 @@ class User(Base):
     location = Column(String(255))
     preferences = Column(JSON, nullable=True)
     date_joined = Column(DateTime, server_default=func.now())
-    
+
     wardrobe_items = relationship("WardrobeItem", back_populates="owner", cascade="all, delete-orphan")
     outfits = relationship("Outfit", back_populates="user", cascade="all, delete-orphan")
     ecommerce_products = relationship("EcommerceProduct", back_populates="user", cascade="all, delete-orphan")
     weather_data = relationship("WeatherData", back_populates="user", cascade="all, delete-orphan")
 
-
 class EcommerceProduct(Base):
     __tablename__ = "ecommerce_products"
-    
+
     product_id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
     product_name = Column(String(255), nullable=False)
     suggested_item_type = Column(String(255), nullable=True)
@@ -43,19 +43,14 @@ class EcommerceProduct(Base):
     product_url = Column(String(255), nullable=False)
     image_url = Column(String(255), nullable=True)
     date_suggested = Column(DateTime, server_default=func.now())
-    
-    # Add a foreign key to the User table
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
-    
-    # Define the relationship to the User model
+
     user = relationship("User", back_populates="ecommerce_products")
-
     wardrobe_items = relationship("WardrobeItem", back_populates="product")
-
 
 class WardrobeItem(Base):
     __tablename__ = "wardrobe_items"
-    
+
     item_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.user_id"))
     product_id = Column(BigInteger, ForeignKey("ecommerce_products.product_id"), nullable=True)
@@ -70,12 +65,11 @@ class WardrobeItem(Base):
     owner = relationship("User", back_populates="wardrobe_items")
     product = relationship("EcommerceProduct", back_populates="wardrobe_items")
 
-
 class Outfit(Base):
     __tablename__ = "outfits"
-    
+
     outfit_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.user_id"))
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     clothings = Column(JSON, nullable=False)
     occasion = Column(JSON, nullable=True)
     for_weather = Column(String(255), nullable=True)
@@ -83,21 +77,20 @@ class Outfit(Base):
     date_suggested = Column(DateTime, server_default=func.now())
 
     user = relationship("User", back_populates="outfits")
-    
+
 class FashionTrend(Base):
     __tablename__ = "fashion_trends"
-    
+
     trend_id = Column(Integer, primary_key=True, autoincrement=True)
     trend_name = Column(String(1000), nullable=False)
-    trend_description = Column(Text, nullable=False) 
+    trend_description = Column(Text, nullable=False)
     outfits = Column(JSON, nullable=True)
     example_url = Column(String(255), nullable=True)
     date_added = Column(DateTime, server_default=func.now())
 
-
 class WeatherData(Base):
     __tablename__ = "weather_data"
-    
+
     weather_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     date = Column(DateTime, nullable=False)
     location = Column(String(255), nullable=False)
@@ -111,6 +104,6 @@ class WeatherData(Base):
     precipitation_probability = Column(Float, nullable=False)
     special_condition = Column(String(255), nullable=True)
     weather_icon = Column(String(255), nullable=True)
-    
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
+
     user = relationship("User", back_populates="weather_data")
