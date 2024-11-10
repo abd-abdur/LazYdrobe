@@ -68,6 +68,7 @@ Stores weather data relevant to a user's location for making weather-appropriate
   - `precipitation`: Amount of precipitation.
   - `precipitation_probability`: Probability of precipitation.
   - `special_condition`: Description of any special weather conditions (e.g., snow, thunderstorms).
+  - `weather_icon`: Name of icon to display.
 
 ### **5. outfits**
 Stores information about generated outfit suggestions based on user wardrobe, weather, and trends.
