@@ -15,6 +15,13 @@ import logging
 # Import models from models.py
 from models import Base, User, EcommerceProduct, WardrobeItem, Outfit, FashionTrend, WeatherData
 
+from wardrobe_models import (
+    WardrobeItemBase,
+    WardrobeItemCreate,
+    WardrobeItemUpdate,
+    WardrobeItemResponse
+)
+
 # Load environment variables from .env file
 load_dotenv()
 
