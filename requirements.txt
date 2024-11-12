@@ -11,6 +11,7 @@ psycopg2-binary
 passlib[bcrypt]
 python-dotenv
 pymysql
+pydantic[email]
 
 
 openai
