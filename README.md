@@ -5,19 +5,24 @@ Too much clothes to keep track of?
 Look no further. Our revolutionary app is here to assist you in keeping up with fashion trends and weather.  
 Simply upload items in your wardrobe so that we can suggest future outfits based on the weather conditions and the current fashion trend for you while providing clothing suggestions to fill in the gaps in your wardrobe.
 
+# LazYdrobe Backend
+
+This is the backend for the LazYdrobe Wardrobe Management Application. It is built with FastAPI and provides endpoints for user management, wardrobe items, outfit suggestions, weather integration, and more.
+
+
 ## Features
 
-- **Wardrobe Management**: Users can upload and manage their wardrobe by categorizing items like tops, bottoms, shoes, and accessories.
-- **Outfit Suggestions**: Generate personalized outfit recommendations based on the weather, current fashion trends, and user preferences.
-- **Weather Integration**: Provides weather-appropriate outfit suggestions based on current and forecasted weather conditions.
-- **Fashion Trends**: Keeps users updated with the latest fashion trends ensuring their wardrobe stays trendy.
-- **Gap Filling**: Recommends additional clothing items to complete outfits and fill gaps in the user’s wardrobe.
-- **E-commerce Integration**: Suggests products from online stores based on wardrobe gaps to help users shop for missing pieces.
+- **User Management**: Registration, authentication, profile updates, and account deletion.
+- **Wardrobe Management**: CRUD operations for wardrobe items.
+- **Outfit Suggestions**: Generate personalized outfit recommendations.
+- **Weather Integration**: Fetch and store weather data to inform outfit suggestions.
+- **Fashion Trends**: Update and retrieve current fashion trends.
+- **E-commerce Integration**: Suggest products from online stores based on wardrobe gaps.
 
 ## Database Overview
 
-The **LazYdrobe** database is designed to manage user data, wardrobe items, outfit suggestions, weather data, fashion trends, and e-commerce products. The database structure supports efficient retrieval and manipulation of data for various functionalities related to fashion trends and user preferences.
-  
+The **LazYdrobe** database manages user data, wardrobe items, outfit suggestions, weather data, fashion trends, and e-commerce products. It uses a **SQL relational model** for efficient data retrieval and manipulation.
+
 ## Schema Diagram
 
 ![LazYdrobe Schema](schema.png)
@@ -37,6 +42,7 @@ Stores user information, including preferences and their wardrobe.
   - `user_ip`: User's ip for more accurate location.
   - `location`: User's location for weather-based outfit suggestions.
   - `preferences`: Json of fashion styles preferred by the user.
+  - - `gender` : User's gender
   - `date_joined`: Date the user registered on the app.
 
 ### **2. wardrobe_items**
@@ -209,6 +215,18 @@ Copy the entire SQL script content from the database_setup.sql file.
 Paste the copied script into your DBMS query editor.
 Execute the script (usually by pressing F5, Ctrl+Enter, or clicking the Execute button).
 This will create the required tables (such as Users, Wardrobe_Items, Outfits, etc.), set up relationships between them, and insert sample data for testing.
+
+### Step 8: Run Database Migration (if applicable)
+
+If you are using Alembic for migrations, initialize and run migrations:
+
+```
+alembic init alembic
+# Configure alembic.ini and env.py accordingly
+alembic revision --autogenerate -m "Initial migration"
+alembic upgrade head
+
+```
 
 ## Database Structure and Key Components
 
