@@ -335,6 +335,82 @@ Follow the structure below for each request:
       "message": "Item deleted successfully"
     }
     ```
+
+#### 6. Retrieve Weather Data
+- **Method**: `POST`
+- **Endpoint**: `http://127.0.0.1:8000/weather/`
+- **JSON Input**:
+    ```json
+    {
+      "location_part1": "New York",
+      "location_part2": "US"
+    }
+    ```
+- **Expected Output**: JSON object of weather forecast data.
+
+#### 7. Create a New User
+- **Method**: `POST`
+- **Endpoint**: `http://127.0.0.1:8000/users/`
+- **JSON Input**:
+    ```json
+    {
+      "username": "john_doe",
+      "email": "john@example.com",
+      "password": "securepassword123",
+      "user_ip": "192.168.1.1",
+      "location": "New York, US",
+      "preferences": ["casual", "outdoor"],
+      "gender": "male"
+    }
+    ```
+- **Expected Output**: JSON object of the created user.
+
+#### 8. Login a User
+- **Method**: `POST`
+- **Endpoint**: `http://127.0.0.1:8000/login/`
+- **JSON Input**:
+    ```json
+    {
+      "email": "john@example.com",
+      "password": "securepassword123"
+    }
+    ```
+- **Expected Output**:
+    ```json
+    {
+      "user_id": 1,
+      "username": "john_doe",
+      "email": "john@example.com"
+    }
+    ```
+
+#### 9. Retrieve User Information
+- **Method**: `GET`
+- **Endpoint**: `http://127.0.0.1:8000/users/{user_id}`
+- **Input**: 
+    ```json
+    {
+      "user_id": 1
+    }
+    ```
+- **Expected Output**: JSON object of the user.
+
+#### 10. Delete User
+- **Method**: `DELETE`
+- **Endpoint**: `http://127.0.0.1:8000/users/{user_id}`
+- **Input**: 
+    ```json
+    {
+      "user_id": 1
+    }
+    ```
+- **Expected Output**:
+    ```json
+    {
+      "message": "User with ID {user_id} deleted successfully."
+    }
+    ```
+
 For reference, you can find all the API tests in the [Postman_Tests.txt](Postman_Tests.txt) file. This file contains descriptions of each API endpoint including method types, expected inputs, and outputs.
 
 ## Conclusion
