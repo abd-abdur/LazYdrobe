@@ -313,14 +313,13 @@ Follow the structure below for each request:
 - **Endpoint**: `http://127.0.0.1:8000/clothing_items/`
 - **JSON Input**:
     ```json
-    {
+    { 
       "user_id": 1,
-      "type": "T-shirt",
-      "season": "Summer",
-      "fabric": "Cotton",
-      "color": "Blue",
+      "clothing_type": "T-shirt",
+      "for_weather": "All",
+      "color": {"Blue"},
       "size": "L",
-      "tags": "casual, summer",
+      "tags": {"casual", "summer"},
       "image_url": "http://example.com/tshirt.jpg"
     }
     ```
@@ -333,16 +332,16 @@ Follow the structure below for each request:
     ```json
     {
       "user_id": 1,
-      "type": "Updated T-shirt",
-      "season": "Summer",
-      "fabric": "Cotton",
-      "color": "Red",
+      "clothing_type": "T-shirt",
+      "for_weather": "All",
+      "color": {"Light blue"},
       "size": "M",
-      "tags": "casual, summer",
-      "image_url": "http://example.com/updated_tshirt.jpg"
+      "tags": {"casual", "summer"},
+      "image_url": "http://example.com/tshirt.jpg"
     }
     ```
 - **Expected Output**: JSON object of the updated clothing item.
+
 
 #### 5. Delete a Clothing Item by ID
 - **Method**: `DELETE`
