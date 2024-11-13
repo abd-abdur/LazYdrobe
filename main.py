@@ -128,6 +128,46 @@ class WeatherResponse(BaseModel):
 
     class Config:
         orm_mode = True
+    
+# Wardrobe Item Schemas
+class WardrobeItemBase(BaseModel):
+    clothing_type: Optional[str] = Field(..., min_length=3, max_length=50)
+    for_weather: Optional[str] = Field(..., min_length=3, max_length=50)
+    color: Optional[List[str]] = None
+    size: Optional[str] = Field(..., min_length=1, max_length=50)
+    tags: Optional[List[str]] = None
+    image_url: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+
+class WardrobeItemCreate(WardrobeItemBase):
+    user_id: int
+
+
+class WardrobeItemUpdate(BaseModel):
+    clothing_type: Optional[str] = Field(..., min_length=3, max_length=50)
+    for_weather: Optional[str] = Field(..., min_length=3, max_length=50)
+    color: Optional[List[str]] = None
+    size: Optional[str] = Field(..., min_length=1, max_length=50)
+    tags: Optional[List[str]] = None
+    image_url: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+
+class WardrobeItemResponse(WardrobeItemBase):
+    clothing_type: str
+    for_weather: str
+    color: list
+    size: str
+    tags: list
+    image_url: str
+    
+    class Config:
+        orm_mode = True
 
 
 # Dependency to get DB session
@@ -382,6 +422,108 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
         db.rollback()
         logger.error(f"Failed to delete user: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to delete user: {str(e)}")
+
+    return
+
+## Create wardrobe item
+@app.post("/wardrobe_item/", response_model=WardrobeItemResponse, status_code=status.HTTP_201_CREATED)
+def create_wardrobe_item(item: WardrobeItemCreate, db: Session = Depends(get_db)):
+    logger.info(f"Adding wardrobe item for user ID: {item.user_id}")
+
+    # Create a new WardrobeItem instance
+    db_item = WardrobeItem(
+        user_id=item.user_id,
+        product_id=None,
+        clothing_type=item.clothing_type,
+        for_weather=item.for_weather,
+        color=item.color,
+        size=item.size,
+        tags=item.tags,
+        image_url=item.image_url
+    )
+
+    # Add the item to the database
+    db.add(db_item)
+    try:
+        db.commit()
+        db.refresh(db_item)
+        logger.info(f"Wardrobe item with ID {db_item.item_id} created successfully.")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to create wardrobe item: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create wardrobe item.")
+
+    return db_item
+
+@app.get("/wardrobe_items/user/{user_id}", response_model=List[WardrobeItemResponse])
+def get_all_wardrobe_items(user_id: int, db: Session = Depends(get_db)):
+    items = db.query(WardrobeItem).filter(WardrobeItem.user_id == user_id).all()
+    if not items:
+        raise HTTPException(status_code=404, detail="No wardrobe items found for this user.")
+    return items
+
+@app.get("/wardrobe_items/{item_id}", response_model=WardrobeItemResponse)
+def read_wardrobe_item(item_id: int, db: Session = Depends(get_db)):
+    logger.info(f"Fetching wardrobe item with ID: {item_id}")
+
+    wardrobe_item = db.query(WardrobeItem).filter(WardrobeItem.item_id == item_id).first()
+    if not wardrobe_item:
+        logger.warning(f"Wardrobe item with ID {item_id} not found.")
+        raise HTTPException(status_code=404, detail="Wardrobe item not found.")
+
+    logger.info(f"Wardrobe item with ID {item_id} retrieved successfully.")
+    return wardrobe_item
+
+
+## Update Wardrobe Item Information
+
+@app.put("/wardrobe_items/{item_id}", response_model=WardrobeItemResponse)
+def update_wardrobe_item(item_id: int, item_update: WardrobeItemUpdate, db: Session = Depends(get_db)):
+    logger.info(f"Updating wardrobe item with ID: {item_id}")
+    logger.debug(f"Update data received: {item_update.dict()}")
+
+    wardrobe_item = db.query(WardrobeItem).filter(WardrobeItem.item_id == item_id).first()
+    if not wardrobe_item:
+        logger.warning(f"Wardrobe item with ID {item_id} not found.")
+        raise HTTPException(status_code=404, detail="Wardrobe item not found.")
+
+    # Update fields from the incoming request if they are provided
+    update_data = item_update.dict(exclude_unset=True)
+    logger.debug(f"Updating fields: {update_data}")
+    for key, value in update_data.items():
+        setattr(wardrobe_item, key, value)
+
+    try:
+        db.commit()
+        db.refresh(wardrobe_item)
+        logger.info(f"Wardrobe item with ID {item_id} updated successfully.")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to update wardrobe item: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update wardrobe item: {str(e)}")
+
+    return wardrobe_item
+
+
+## Delete Wardrobe Item
+
+@app.delete("/wardrobe_items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_wardrobe_item(item_id: int, db: Session = Depends(get_db)):
+    logger.info(f"Deleting wardrobe item with ID: {item_id}")
+
+    wardrobe_item = db.query(WardrobeItem).filter(WardrobeItem.item_id == item_id).first()
+    if not wardrobe_item:
+        logger.warning(f"Wardrobe item with ID {item_id} not found.")
+        raise HTTPException(status_code=404, detail="Wardrobe item not found.")
+
+    try:
+        db.delete(wardrobe_item)
+        db.commit()
+        logger.info(f"Wardrobe item with ID {item_id} deleted successfully.")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to delete wardrobe item: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete wardrobe item: {str(e)}")
 
     return
 

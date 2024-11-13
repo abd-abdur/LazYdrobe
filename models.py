@@ -1,4 +1,5 @@
 # models.py
+
 from sqlalchemy import (
     Column,
     Integer,
@@ -38,6 +39,7 @@ class EcommerceProduct(Base):
     __tablename__ = "ecommerce_products"
 
     product_id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    ebay_item_id = Column(String(50), unique=True, nullable=False)
     product_name = Column(String(255), nullable=False)
     suggested_item_type = Column(String(255), nullable=True)
     price = Column(Float, nullable=False)
@@ -71,7 +73,6 @@ class Outfit(Base):
 
     outfit_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
-    clothings = Column(JSON, nullable=False)
     occasion = Column(JSON, nullable=True)
     for_weather = Column(String(255), nullable=True)
     source_url = Column(String(255), nullable=True)
