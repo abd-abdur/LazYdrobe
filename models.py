@@ -34,6 +34,7 @@ class User(Base):
     outfits = relationship("Outfit", back_populates="user", cascade="all, delete-orphan")
     ecommerce_products = relationship("EcommerceProduct", back_populates="user", cascade="all, delete-orphan")
     weather_data = relationship("WeatherData", back_populates="user", cascade="all, delete-orphan")
+    fashion_trends = relationship("FashionTrend", back_populates="user", cascade="all, delete-orphan")
 
 class EcommerceProduct(Base):
     __tablename__ = "ecommerce_products"
@@ -84,11 +85,12 @@ class FashionTrend(Base):
     __tablename__ = "fashion_trends"
 
     trend_id = Column(Integer, primary_key=True, autoincrement=True)
-    trend_name = Column(String(1000), nullable=False)
+    trend_name = Column(String(255), nullable=False, index=True)
     trend_description = Column(Text, nullable=False)
-    outfits = Column(JSON, nullable=True)
-    example_url = Column(String(255), nullable=True)
     date_added = Column(DateTime, server_default=func.now())
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
+
+    user = relationship("User", back_populates="fashion_trends")
 
 class WeatherData(Base):
     __tablename__ = "weather_data"
