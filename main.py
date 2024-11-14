@@ -15,11 +15,20 @@ import logging
 # Import models from models.py
 from models import Base, User, EcommerceProduct, WardrobeItem, Outfit, FashionTrend, WeatherData
 
+# Import fashion_trends function
+from fashion_trends import fetch_and_update_fashion_trends
+
 # Load environment variables from .env file
 load_dotenv()
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
 # Database configuration
@@ -128,7 +137,16 @@ class WeatherResponse(BaseModel):
 
     class Config:
         orm_mode = True
-    
+
+class FashionTrendResponse(BaseModel):
+    trend_id: int
+    trend_name: str
+    trend_description: str
+    date_added: datetime
+
+    class Config:
+        orm_mode = True
+
 # Wardrobe Item Schemas
 class WardrobeItemBase(BaseModel):
     clothing_type: Optional[str] = Field(..., min_length=3, max_length=50)
@@ -147,10 +165,10 @@ class WardrobeItemCreate(WardrobeItemBase):
 
 
 class WardrobeItemUpdate(BaseModel):
-    clothing_type: Optional[str] = Field(..., min_length=3, max_length=50)
-    for_weather: Optional[str] = Field(..., min_length=3, max_length=50)
+    clothing_type: Optional[str] = Field(None, min_length=3, max_length=50)
+    for_weather: Optional[str] = Field(None, min_length=3, max_length=50)
     color: Optional[List[str]] = None
-    size: Optional[str] = Field(..., min_length=1, max_length=50)
+    size: Optional[str] = Field(None, min_length=1, max_length=50)
     tags: Optional[List[str]] = None
     image_url: Optional[str] = None
 
@@ -161,11 +179,11 @@ class WardrobeItemUpdate(BaseModel):
 class WardrobeItemResponse(WardrobeItemBase):
     clothing_type: str
     for_weather: str
-    color: list
+    color: List[str]
     size: str
-    tags: list
-    image_url: str
-    
+    tags: List[str]
+    image_url: Optional[str] = None
+
     class Config:
         orm_mode = True
 
@@ -425,7 +443,9 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
 
     return
 
-## Create wardrobe item
+
+## Create Wardrobe Item
+
 @app.post("/wardrobe_item/", response_model=WardrobeItemResponse, status_code=status.HTTP_201_CREATED)
 def create_wardrobe_item(item: WardrobeItemCreate, db: Session = Depends(get_db)):
     logger.info(f"Adding wardrobe item for user ID: {item.user_id}")
@@ -433,7 +453,7 @@ def create_wardrobe_item(item: WardrobeItemCreate, db: Session = Depends(get_db)
     # Create a new WardrobeItem instance
     db_item = WardrobeItem(
         user_id=item.user_id,
-        product_id=None,
+        product_id=None,  # Assuming product_id is optional and handled separately
         clothing_type=item.clothing_type,
         for_weather=item.for_weather,
         color=item.color,
@@ -455,12 +475,14 @@ def create_wardrobe_item(item: WardrobeItemCreate, db: Session = Depends(get_db)
 
     return db_item
 
+
 @app.get("/wardrobe_items/user/{user_id}", response_model=List[WardrobeItemResponse])
 def get_all_wardrobe_items(user_id: int, db: Session = Depends(get_db)):
     items = db.query(WardrobeItem).filter(WardrobeItem.user_id == user_id).all()
     if not items:
         raise HTTPException(status_code=404, detail="No wardrobe items found for this user.")
     return items
+
 
 @app.get("/wardrobe_items/{item_id}", response_model=WardrobeItemResponse)
 def read_wardrobe_item(item_id: int, db: Session = Depends(get_db)):
@@ -567,6 +589,38 @@ def get_weather_data(weather_request: WeatherRequest, background_tasks: Backgrou
     # Return the data
     logger.info("Returning weather data to the client.")
     return weather_data
+
+
+## Fashion Trends Endpoints
+
+@app.post("/fashion_trends/update", status_code=status.HTTP_202_ACCEPTED)
+def update_fashion_trends_endpoint(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """
+    Endpoint to trigger the fetching and updating of fashion trends.
+    """
+    background_tasks.add_task(fetch_and_update_fashion_trends, db)
+    logger.info("Fashion trends update initiated via API.")
+    return {"message": "Fashion trends update initiated."}
+
+@app.get("/fashion_trends/", response_model=List[FashionTrendResponse], status_code=status.HTTP_200_OK)
+def get_fashion_trends(db: Session = Depends(get_db)):
+    """
+    Retrieve the latest fashion trends from the database.
+    """
+    trends = db.query(FashionTrend).order_by(FashionTrend.date_added.desc()).all()
+    return trends
+
+# @app.post("/fashion_trends/test_update", status_code=status.HTTP_200_OK)
+# def test_update_fashion_trends(db: Session = Depends(get_db)):
+#     """
+#     Temporary endpoint to test fetching and updating fashion trends synchronously.
+#     """
+#     try:
+#         fetch_and_update_fashion_trends(db)
+#         return {"message": "Fashion trends update completed successfully."}
+#     except Exception as e:
+#         logger.error(f"Error during test fashion trends update: {e}")
+#         raise HTTPException(status_code=500, detail=f"Error during update: {str(e)}")
 
 
 ## Exception Handlers
