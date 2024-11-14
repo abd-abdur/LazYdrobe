@@ -69,7 +69,7 @@ Postman Tests for API Endpoints
 - **Endpoint**: GET /user/{user_id}
 - **Method**: GET
 - **URL Parameters**: 
-  - user_id: Replace {user_id} with an existing clothing item ID (e.g., 3).
+  - user_id: Replace {user_id} with an existing user item ID (e.g., 3).
 - **Output**: 
 {
     "username": "john_doe",
@@ -148,8 +148,10 @@ Postman Tests for API Endpoints
 204 No Content
 
 6. Retrieve All Clothing Items
-- **Endpoint**: GET /clothing_items/
+- **Endpoint**: GET /clothing_items/user/{user_id}
 - **Method**: GET
+- **URL Parameters**: 
+  - user_id: Replace {user_id} with an existing user item ID (e.g., 3).
 - **Output**:
 [
     {

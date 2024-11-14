@@ -165,6 +165,7 @@ class WardrobeItemResponse(WardrobeItemBase):
     size: str
     tags: list
     image_url: str
+    item_id: int
     
     class Config:
         orm_mode = True
@@ -426,6 +427,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     return
 
 ## Create wardrobe item
+
 @app.post("/wardrobe_item/", response_model=WardrobeItemResponse, status_code=status.HTTP_201_CREATED)
 def create_wardrobe_item(item: WardrobeItemCreate, db: Session = Depends(get_db)):
     logger.info(f"Adding wardrobe item for user ID: {item.user_id}")
@@ -455,12 +457,16 @@ def create_wardrobe_item(item: WardrobeItemCreate, db: Session = Depends(get_db)
 
     return db_item
 
+# Get all wardrobe items
+
 @app.get("/wardrobe_items/user/{user_id}", response_model=List[WardrobeItemResponse])
 def get_all_wardrobe_items(user_id: int, db: Session = Depends(get_db)):
     items = db.query(WardrobeItem).filter(WardrobeItem.user_id == user_id).all()
     if not items:
         raise HTTPException(status_code=404, detail="No wardrobe items found for this user.")
     return items
+
+# Get one wardrobe item
 
 @app.get("/wardrobe_items/{item_id}", response_model=WardrobeItemResponse)
 def read_wardrobe_item(item_id: int, db: Session = Depends(get_db)):
