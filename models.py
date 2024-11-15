@@ -35,6 +35,9 @@ class User(Base):
     ecommerce_products = relationship("EcommerceProduct", back_populates="user", cascade="all, delete-orphan")
     weather_data = relationship("WeatherData", back_populates="user", cascade="all, delete-orphan")
     fashion_trends = relationship("FashionTrend", back_populates="user", cascade="all, delete-orphan")
+    outfit_suggestions = relationship("OutfitSuggestion", back_populates="user", cascade="all, delete-orphan")
+
+
 
 class EcommerceProduct(Base):
     __tablename__ = "ecommerce_products"
@@ -111,3 +114,15 @@ class WeatherData(Base):
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
 
     user = relationship("User", back_populates="weather_data")
+
+# models.py
+
+class OutfitSuggestion(Base):
+    __tablename__ = "outfit_suggestions"
+
+    suggestion_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    outfit_details = Column(JSON, nullable=False)  # Stores outfit components and eBay links
+    date_suggested = Column(DateTime, server_default=func.now())
+
+    user = relationship("User", back_populates="outfit_suggestions")
