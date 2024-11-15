@@ -1,3 +1,5 @@
+#fetch_ebay_data.py
+
 import os
 import requests
 from sqlalchemy import create_engine
@@ -114,6 +116,55 @@ def fetch_ebay_products(search_query: str, limit: int = 50) -> List[dict]:
 
     logger.info(f"Total items fetched: {len(items_fetched)}")
     return items_fetched
+
+def fetch_similar_ebay_products(product_name: str, limit: int = 3) -> List[str]:
+    """
+    Fetches similar products from eBay based on the product name.
+    Returns a list of eBay product URLs.
+    """
+
+    ebay_api_url = "https://svcs.ebay.com/services/search/FindingService/v1"
+    headers = {
+        "X-EBAY-SOA-SECURITY-APPNAME": EBAY_APP_ID,
+        "X-EBAY-SOA-OPERATION-NAME": "findItemsByKeywords",
+        "X-EBAY-SOA-SERVICE-VERSION": "1.0.0",
+        "X-EBAY-SOA-RESPONSE-DATA-FORMAT": "JSON",
+    }
+
+    params = {
+        "keywords": product_name,
+        "paginationInput.entriesPerPage": limit,
+        "paginationInput.pageNumber": 1,
+        "itemFilter(0).name": "HideDuplicateItems",
+        "itemFilter(0).value": "true",
+    }
+
+    try:
+        response = requests.get(ebay_api_url, headers=headers, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        # Check API response acknowledgment
+        search_response = data.get('findItemsByKeywordsResponse', [{}])[0]
+        ack = search_response.get('ack', [None])[0]
+        if ack != 'Success':
+            error_message = search_response.get('errorMessage', [{}])[0].get('error', [{}])[0].get('message', ['Unknown error'])[0]
+            logger.error(f"eBay API Error: {error_message}")
+            return []
+
+        # Extract items
+        items = search_response.get('searchResult', [{}])[0].get('item', [])
+        ebay_links = [item.get("viewItemURL", [None])[0] for item in items if item.get("viewItemURL", [None])[0]]
+
+        logger.info(f"Fetched {len(ebay_links)} similar products from eBay for '{product_name}'.")
+        return ebay_links
+
+    except requests.exceptions.HTTPError as http_err:
+        logger.error(f"HTTP error occurred while fetching eBay products: {http_err}")
+    except Exception as err:
+        logger.error(f"An unexpected error occurred while fetching eBay products: {err}")
+
+    return []
 
 def insert_products(session: Session, items: List[dict]):
     """

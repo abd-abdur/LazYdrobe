@@ -13,10 +13,12 @@ import requests
 import logging
 
 # Import models from models.py
-from models import Base, User, EcommerceProduct, WardrobeItem, Outfit, FashionTrend, WeatherData
+from models import Base, User, EcommerceProduct, WardrobeItem, Outfit, FashionTrend, WeatherData, OutfitSuggestion
 
 # Import fashion_trends function
 from fashion_trends import fetch_and_update_fashion_trends
+
+from outfit_suggester import suggest_outfits
 
 # Load environment variables from .env file
 load_dotenv()
@@ -117,6 +119,7 @@ class LoginResponse(BaseModel):
 # Weather Schemas
 
 class WeatherRequest(BaseModel):
+    user_id: int 
     location_part1: str
     location_part2: Optional[str] = None  # e.g., City, CountryCode
 
@@ -187,7 +190,36 @@ class WardrobeItemResponse(WardrobeItemBase):
     class Config:
         orm_mode = True
 
+class OutfitComponent(BaseModel):
+    clothing_type: str
+    item_id: int
+    product_name: str
+    image_url: Optional[str] = None
+    eBay_link: Optional[List[str]] = None 
+    
+    class Config:
+        orm_mode = True
 
+class OutfitSuggestionResponse(BaseModel):
+    suggestion_id: int
+    outfit_details: List[List[OutfitComponent]]
+    date_suggested: datetime
+
+    class Config:
+        orm_mode = True
+        
+class OutfitSuggestionRequest(BaseModel):
+    user_id: int
+
+class OutfitSuggestionCreateResponse(BaseModel):
+    suggestion_id: int
+    outfit_details: List[List[OutfitComponent]]
+    date_suggested: datetime
+
+    class Config:
+        orm_mode = True
+
+        
 # Dependency to get DB session
 def get_db():
     db = SessionLocal()
@@ -552,11 +584,12 @@ def delete_wardrobe_item(item_id: int, db: Session = Depends(get_db)):
 
 ## Weather Endpoint
 
+# main.py
+
 @app.post("/weather/", response_model=List[WeatherResponse], status_code=status.HTTP_200_OK)
 def get_weather_data(weather_request: WeatherRequest, background_tasks: BackgroundTasks):
     """
-    Fetch weather data for the given location and return it.
-    Optionally, insert the data into the database.
+    Fetch weather data for the given location and insert it into the database.
     """
     logger.info(f"Received weather data request for: {weather_request}")
 
@@ -579,8 +612,8 @@ def get_weather_data(weather_request: WeatherRequest, background_tasks: Backgrou
         raise HTTPException(status_code=500, detail="An unexpected error occurred while fetching weather data.")
 
     try:
-        # Insert into DB as a background task with a new session
-        background_tasks.add_task(insert_weather_data_to_db, weather_data, user_id=None)  # Replace user_id if needed
+        # Insert into DB as a background task with the provided user_id
+        background_tasks.add_task(insert_weather_data_to_db, weather_data, user_id=weather_request.user_id)
         logger.info("Scheduled weather data insertion as a background task.")
     except Exception as e:
         logger.error(f"Error scheduling background task for weather data insertion: {e}")
@@ -609,6 +642,37 @@ def get_fashion_trends(db: Session = Depends(get_db)):
     """
     trends = db.query(FashionTrend).order_by(FashionTrend.date_added.desc()).all()
     return trends
+
+
+# main.py
+
+@app.post("/outfits/suggest", response_model=OutfitSuggestionCreateResponse, status_code=status.HTTP_201_CREATED)
+def suggest_outfit(request: OutfitSuggestionRequest, db: Session = Depends(get_db)):
+    """
+    Suggests outfits for the user based on current weather and fashion trends.
+    """
+    try:
+        outfit_suggestion = suggest_outfits(request.user_id, db)
+        return outfit_suggestion
+    except ValueError as ve:
+        logger.error(f"ValueError during outfit suggestion: {ve}")
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Error during outfit suggestion: {e}")
+        raise HTTPException(status_code=500, detail="Failed to suggest outfits.")
+
+
+from sqlalchemy.orm import joinedload
+
+@app.get("/outfits/suggestions/{user_id}", response_model=List[OutfitSuggestionResponse], status_code=status.HTTP_200_OK)
+def get_outfit_suggestions(user_id: int, db: Session = Depends(get_db)):
+    """
+    Retrieves all outfit suggestions for the specified user.
+    """
+    suggestions = db.query(OutfitSuggestion).options(joinedload(OutfitSuggestion.user)).filter(OutfitSuggestion.user_id == user_id).order_by(OutfitSuggestion.date_suggested.desc()).all()
+    if not suggestions:
+        raise HTTPException(status_code=404, detail="No outfit suggestions found for this user.")
+    return suggestions
 
 # @app.post("/fashion_trends/test_update", status_code=status.HTTP_200_OK)
 # def test_update_fashion_trends(db: Session = Depends(get_db)):
