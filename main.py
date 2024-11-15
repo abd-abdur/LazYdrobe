@@ -6,7 +6,7 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 import requests
@@ -177,6 +177,7 @@ class WardrobeItemUpdate(BaseModel):
 
 
 class WardrobeItemResponse(WardrobeItemBase):
+    item_id: int
     clothing_type: str
     for_weather: str
     color: List[str]
@@ -219,22 +220,69 @@ def get_api_key(key_name: str) -> str:
                             detail=f"{key_name} not found in environment variables.")
     return api_key
 
+def fetch_weather_data_from_db(location):
+    """
+    Try to fetch 5 days of weather data in location from db
+    Returns all five or nothing
+    """    
+    today = datetime.utcnow().date()
+    db = SessionLocal()
+
+    weather_data = []
+    logger.info(f"Fetching data from database")
+
+    try:
+        for i in range(5):
+            date = today + timedelta(days=i)
+            entry = (
+                db.query(WeatherData)
+                .filter(WeatherData.location == location, WeatherData.date == date)
+                .first()
+            )
+            if entry:
+                weather_data.append({
+                    'date': entry.date,
+                    'location': entry.location,
+                    'temp_max': entry.temp_max,
+                    'temp_min': entry.temp_min,
+                    'feels_max': entry.feels_max,
+                    'feels_min': entry.feels_min,
+                    'wind_speed': entry.wind_speed,
+                    'humidity': entry.humidity,
+                    'precipitation': entry.precipitation,
+                    'precipitation_probability': entry.precipitation_probability,
+                    'special_condition': entry.special_condition,
+                    'weather_icon': entry.weather_icon,
+                })
+        logger.info(f"Fetching data for {date}")
+    except Exception as e:
+        logger.error(f"Error fetching data from database: {e}")
+        return []
+    finally:
+        db.close()
+
+    return weather_data if len(weather_data) == 5 else []
 
 def fetch_weather_data(api_key: str, location_part1: str, location_part2: Optional[str] = None) -> List[dict]:
     """
-    Fetch weather data for today from Visual Crossing API.
+    Try to get weather data from DB,
+    Fetch weather data from Visual Crossing API.
     """
     if location_part2:
         location = f"{location_part1},{location_part2}"
     else:
         location = location_part1
 
+    weather_entries=fetch_weather_data_from_db(location)
+
+    if (weather_entries):
+        return weather_entries
+
     # URL-encode the location to handle spaces and special characters
     location_encoded = requests.utils.quote(location)
 
     url = f'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{location_encoded}/next5days?key={api_key}&unitGroup=us&iconSet=icons2'
     response = requests.get(url)
-    logger.info(f"Weather API URL: {url}")
 
     if response.status_code != 200:
         error_message = response.text
@@ -281,24 +329,44 @@ def insert_weather_data_to_db(data: List[dict], user_id: Optional[int] = None):
 
     try:
         for entry in data:
-            weather_record = WeatherData(
-                date=entry['date'],
-                location=entry['location'],
-                temp_max=entry['temp_max'],
-                temp_min=entry['temp_min'],
-                feels_max=entry['feels_max'],
-                feels_min=entry['feels_min'],
-                wind_speed=entry['wind_speed'],
-                humidity=entry['humidity'],
-                precipitation=entry['precipitation'],
-                precipitation_probability=entry['precipitation_probability'],
-                special_condition=entry['special_condition'],
-                weather_icon=entry['weather_icon'],
-                user_id=user_id
-            )
-            db.add(weather_record)
+            existing_record = db.query(WeatherData).filter_by(
+                date=entry['date'], location=entry['location']
+            ).first()
+
+            if existing_record:
+                # Update the existing record
+                existing_record.temp_max = entry['temp_max']
+                existing_record.temp_min = entry['temp_min']
+                existing_record.feels_max = entry['feels_max']
+                existing_record.feels_min = entry['feels_min']
+                existing_record.wind_speed = entry['wind_speed']
+                existing_record.humidity = entry['humidity']
+                existing_record.precipitation = entry['precipitation']
+                existing_record.precipitation_probability = entry['precipitation_probability']
+                existing_record.special_condition = entry['special_condition']
+                existing_record.weather_icon = entry['weather_icon']
+                existing_record.user_id = user_id
+                logger.info(f"Updated existing weather record for {entry['date']} at {entry['location']}.")
+            else:
+                # Else input
+                weather_record = WeatherData(
+                    date=entry['date'],
+                    location=entry['location'],
+                    temp_max=entry['temp_max'],
+                    temp_min=entry['temp_min'],
+                    feels_max=entry['feels_max'],
+                    feels_min=entry['feels_min'],
+                    wind_speed=entry['wind_speed'],
+                    humidity=entry['humidity'],
+                    precipitation=entry['precipitation'],
+                    precipitation_probability=entry['precipitation_probability'],
+                    special_condition=entry['special_condition'],
+                    weather_icon=entry['weather_icon'],
+                    user_id=user_id
+                )
+                db.add(weather_record)
+        logger.info("Weather data successfully updated or inserted into the database.")
         db.commit()
-        logger.info("Weather data successfully inserted into the database.")
     except Exception as e:
         db.rollback()
         logger.error(f"Error inserting data: {e}")
