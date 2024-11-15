@@ -263,7 +263,7 @@ def fetch_weather_data_from_db(location:str) -> List[dict]:
     logger.info(f"Fetching data from database")
 
     try:
-        for i in range(5):
+        for i in range(4):
             date = today + timedelta(days=i)
             entry = (
                 db.query(WeatherData)
@@ -285,13 +285,15 @@ def fetch_weather_data_from_db(location:str) -> List[dict]:
                     'special_condition': entry.special_condition,
                     'weather_icon': entry.weather_icon,
                 })
-            logger.info(f"Fetching data for {date}")
+                logger.info(f"Obtained weather data for {date}")
     except Exception as e:
         logger.error(f"Error fetching data from database: {e}")
         return []
     finally:
         db.close()
-    if len(weather_data) == 5:
+    
+    logger.info(weather_data)
+    if len(weather_data) == 4:
         return weather_data  
     return []
 
@@ -671,8 +673,10 @@ def get_weather_data(weather_request: WeatherRequest, background_tasks: Backgrou
 
     try:
         weather_data = fetch_weather_data_from_db(location)
-        if not weather_data:  # If no data found in the database
-                raise ValueError(f"No full weather data for {location} found in the database.")
+        if not weather_data:
+            logger.info(weather_data)
+            raise ValueError(f"No full weather data for {location} found in the database.")
+        
     except ValueError:
         try:
             api_key = get_api_key('VISUAL_CROSSING_API_KEY')
