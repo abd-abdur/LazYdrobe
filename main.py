@@ -67,12 +67,13 @@ class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
     user_ip: Optional[str] = None
-    location: Optional[str] = None
-    preferences: Optional[List[str]] = None  # Expecting a list
+    location: str  # Now required
+    preferences: Optional[List[str]] = None
     gender: Optional[str] = None
 
     class Config:
         orm_mode = True
+
 
 
 class UserCreate(UserBase):
@@ -120,8 +121,6 @@ class LoginResponse(BaseModel):
 
 class WeatherRequest(BaseModel):
     user_id: int 
-    location_part1: str
-    location_part2: Optional[str] = None  # e.g., City, CountryCode
 
 
 class WeatherResponse(BaseModel):
@@ -264,7 +263,7 @@ def fetch_weather_data(api_key: str, location_part1: str, location_part2: Option
     # URL-encode the location to handle spaces and special characters
     location_encoded = requests.utils.quote(location)
 
-    url = f'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{location_encoded}/next5days?key={api_key}&unitGroup=us&iconSet=icons2'
+    url = f'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{location_encoded}/next3days?key={api_key}&unitGroup=us&iconSet=icons2'
     response = requests.get(url)
     logger.info(f"Weather API URL: {url}")
 
@@ -362,7 +361,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         email=user.email,
         password=hashed_password,
         user_ip=user.user_ip,
-        location=user.location,
+        location=user.location,  # Now required
         preferences=user.preferences,
         gender=user.gender 
     )
@@ -378,6 +377,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
 
     return db_user
+
 
 
 ## User Login
@@ -584,14 +584,24 @@ def delete_wardrobe_item(item_id: int, db: Session = Depends(get_db)):
 
 ## Weather Endpoint
 
-# main.py
-
 @app.post("/weather/", response_model=List[WeatherResponse], status_code=status.HTTP_200_OK)
-def get_weather_data(weather_request: WeatherRequest, background_tasks: BackgroundTasks):
+def get_weather_data(weather_request: WeatherRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """
-    Fetch weather data for the given location and insert it into the database.
+    Fetch weather data for the given user based on their stored location and insert it into the database.
     """
-    logger.info(f"Received weather data request for: {weather_request}")
+    logger.info(f"Received weather data request for user_id={weather_request.user_id}")
+
+    # Fetch user from DB to get location
+    user = db.query(User).filter(User.user_id == weather_request.user_id).first()
+    if not user:
+        logger.error(f"User with ID {weather_request.user_id} not found.")
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    if not user.location:
+        logger.error(f"User with ID {weather_request.user_id} does not have a location set.")
+        raise HTTPException(status_code=400, detail="User location not set.")
+
+    location = user.location
 
     try:
         api_key = get_api_key('VISUAL_CROSSING_API_KEY')
@@ -601,8 +611,15 @@ def get_weather_data(weather_request: WeatherRequest, background_tasks: Backgrou
         raise HTTPException(status_code=500, detail=str(e))
 
     try:
+        # Split location into parts if needed
+        if "," in location:
+            location_part1, location_part2 = [part.strip() for part in location.split(",", 1)]
+        else:
+            location_part1 = location
+            location_part2 = None
+
         # Fetch weather data
-        weather_data = fetch_weather_data(api_key, weather_request.location_part1, weather_request.location_part2)
+        weather_data = fetch_weather_data(api_key, location_part1, location_part2)
         logger.info("Fetched weather data successfully.")
     except HTTPException as he:
         logger.error(f"HTTPException during weather data fetch: {he.detail}")
@@ -622,6 +639,7 @@ def get_weather_data(weather_request: WeatherRequest, background_tasks: Backgrou
     # Return the data
     logger.info("Returning weather data to the client.")
     return weather_data
+
 
 
 ## Fashion Trends Endpoints

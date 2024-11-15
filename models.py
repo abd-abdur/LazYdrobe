@@ -38,6 +38,7 @@ class User(Base):
     outfit_suggestions = relationship("OutfitSuggestion", back_populates="user", cascade="all, delete-orphan")
 
 
+
 class EcommerceProduct(Base):
     __tablename__ = "ecommerce_products"
 
