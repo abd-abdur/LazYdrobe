@@ -251,10 +251,10 @@ def get_api_key(key_name: str) -> str:
                             detail=f"{key_name} not found in environment variables.")
     return api_key
 
-def fetch_weather_data_from_db(location):
+def fetch_weather_data_from_db(location:str) -> List[dict]:
     """
-    Try to fetch 5 days of weather data in location from db
-    Returns all five or nothing
+    Try to fetch 5 days of weather data in location from database
+    Returns all five or []
     """    
     today = datetime.utcnow().date()
     db = SessionLocal()
@@ -285,24 +285,21 @@ def fetch_weather_data_from_db(location):
                     'special_condition': entry.special_condition,
                     'weather_icon': entry.weather_icon,
                 })
-        logger.info(f"Fetching data for {date}")
+            logger.info(f"Fetching data for {date}")
     except Exception as e:
         logger.error(f"Error fetching data from database: {e}")
         return []
     finally:
         db.close()
+    if len(weather_data) == 5:
+        return weather_data  
+    return []
 
-    return weather_data if len(weather_data) == 5 else []
-
-def fetch_weather_data(api_key: str, location_part1: str, location_part2: Optional[str] = None) -> List[dict]:
+def fetch_weather_data(api_key: str, location: str) -> List[dict]:
     """
     Try to get weather data from DB,
     Fetch weather data from Visual Crossing API.
     """
-    if location_part2:
-        location = f"{location_part1},{location_part2}"
-    else:
-        location = location_part1
 
     weather_entries=fetch_weather_data_from_db(location)
 
@@ -314,6 +311,7 @@ def fetch_weather_data(api_key: str, location_part1: str, location_part2: Option
 
     url = f'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{location_encoded}/next3days?key={api_key}&unitGroup=us&iconSet=icons2'
     response = requests.get(url)
+    logger.info("Getting weather data from API")
 
     if response.status_code != 200:
         error_message = response.text
@@ -672,37 +670,34 @@ def get_weather_data(weather_request: WeatherRequest, background_tasks: Backgrou
     location = user.location
 
     try:
-        api_key = get_api_key('VISUAL_CROSSING_API_KEY')
-        logger.info("Retrieved Visual Crossing API key successfully.")
-    except ValueError as e:
-        logger.error(f"API Key Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        weather_data = fetch_weather_data_from_db(location)
+        if not weather_data:  # If no data found in the database
+                raise ValueError(f"No full weather data for {location} found in the database.")
+    except ValueError:
+        try:
+            api_key = get_api_key('VISUAL_CROSSING_API_KEY')
+            logger.info("Retrieved Visual Crossing API key successfully.")
+        except ValueError as e:
+            logger.error(f"API Key Error: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
 
-    try:
-        # Split location into parts if needed
-        if "," in location:
-            location_part1, location_part2 = [part.strip() for part in location.split(",", 1)]
-        else:
-            location_part1 = location
-            location_part2 = None
+        try:
+            weather_data = fetch_weather_data(api_key, location)
+            logger.info("Fetched weather data successfully.")
+        except HTTPException as he:
+            logger.error(f"HTTPException during weather data fetch: {he.detail}")
+            raise he
+        except Exception as e:
+            logger.error(f"Unexpected error during weather data fetch: {e}")
+            raise HTTPException(status_code=500, detail="An unexpected error occurred while fetching weather data.")
 
-        # Fetch weather data
-        weather_data = fetch_weather_data(api_key, location_part1, location_part2)
-        logger.info("Fetched weather data successfully.")
-    except HTTPException as he:
-        logger.error(f"HTTPException during weather data fetch: {he.detail}")
-        raise he
-    except Exception as e:
-        logger.error(f"Unexpected error during weather data fetch: {e}")
-        raise HTTPException(status_code=500, detail="An unexpected error occurred while fetching weather data.")
-
-    try:
-        # Insert into DB as a background task with the provided user_id
-        background_tasks.add_task(insert_weather_data_to_db, weather_data, user_id=weather_request.user_id)
-        logger.info("Scheduled weather data insertion as a background task.")
-    except Exception as e:
-        logger.error(f"Error scheduling background task for weather data insertion: {e}")
-        raise HTTPException(status_code=500, detail="Failed to schedule weather data insertion.")
+        try:
+            # Insert into DB as a background task with the provided user_id
+            background_tasks.add_task(insert_weather_data_to_db, weather_data, user_id=weather_request.user_id)
+            logger.info("Scheduled weather data insertion as a background task.")
+        except Exception as e:
+            logger.error(f"Error scheduling background task for weather data insertion: {e}")
+            raise HTTPException(status_code=500, detail="Failed to schedule weather data insertion.")
 
     # Return the data
     logger.info("Returning weather data to the client.")
