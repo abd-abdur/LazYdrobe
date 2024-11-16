@@ -1,6 +1,6 @@
 # main.py
 
-from fastapi import FastAPI, HTTPException, Depends, status, BackgroundTasks, Request
+from fastapi import FastAPI, HTTPException, Depends, status, BackgroundTasks, Request, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import create_engine
@@ -152,7 +152,7 @@ class FashionTrendResponse(BaseModel):
 # Wardrobe Item Schemas
 class WardrobeItemBase(BaseModel):
     clothing_type: Optional[str] = Field(..., min_length=3, max_length=50)
-    for_weather: Optional[str] = Field(..., min_length=3, max_length=50)
+    for_weather: Optional[str] = None
     color: Optional[List[str]] = None
     size: Optional[str] = Field(..., min_length=1, max_length=50)
     tags: Optional[List[str]] = None
@@ -286,6 +286,8 @@ def fetch_weather_data_from_db(location:str) -> List[dict]:
                     'weather_icon': entry.weather_icon,
                 })
                 logger.info(f"Obtained weather data for {date}")
+            else:
+                break;
     except Exception as e:
         logger.error(f"Error fetching data from database: {e}")
         return []
@@ -575,14 +577,18 @@ def create_wardrobe_item(item: WardrobeItemCreate, db: Session = Depends(get_db)
 
     return db_item
 
+## Get Wardrobe Items for User
 
 @app.get("/wardrobe_items/user/{user_id}", response_model=List[WardrobeItemResponse])
 def get_all_wardrobe_items(user_id: int, db: Session = Depends(get_db)):
     items = db.query(WardrobeItem).filter(WardrobeItem.user_id == user_id).all()
+    logger.info(f"Fetching wardrobe item for user ID: {user_id}")
+    logger.info(f"Fetched{items}")
     if not items:
         raise HTTPException(status_code=404, detail="No wardrobe items found for this user.")
     return items
 
+## Get Wardrobe Item Information
 
 @app.get("/wardrobe_items/{item_id}", response_model=WardrobeItemResponse)
 def read_wardrobe_item(item_id: int, db: Session = Depends(get_db)):
@@ -629,23 +635,28 @@ def update_wardrobe_item(item_id: int, item_update: WardrobeItemUpdate, db: Sess
 
 ## Delete Wardrobe Item
 
-@app.delete("/wardrobe_items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_wardrobe_item(item_id: int, db: Session = Depends(get_db)):
-    logger.info(f"Deleting wardrobe item with ID: {item_id}")
+@app.delete("/wardrobe_items", status_code=status.HTTP_204_NO_CONTENT)
+def delete_wardrobe_item(item_ids: List[int] = Body(..., embed=True), db: Session = Depends(get_db)):
+    logger.info(f"Deleting wardrobe item with IDs: {item_ids}")
 
-    wardrobe_item = db.query(WardrobeItem).filter(WardrobeItem.item_id == item_id).first()
-    if not wardrobe_item:
-        logger.warning(f"Wardrobe item with ID {item_id} not found.")
-        raise HTTPException(status_code=404, detail="Wardrobe item not found.")
+    not_found_items = []
+    for item_id in item_ids:
+        wardrobe_item = db.query(WardrobeItem).filter(WardrobeItem.item_id == item_id).first()
+        if not wardrobe_item:
+            not_found_items.append(item_id)
+        else:
+            try:
+                db.delete(wardrobe_item)
+                db.commit()
+                logger.info(f"Wardrobe item with ID {item_id} deleted successfully.")
+            except Exception as e:
+                db.rollback()
+                logger.error(f"Failed to delete wardrobe item with ID {item_id}: {e}")
+                raise HTTPException(status_code=500, detail=f"Failed to delete wardrobe item with ID {item_id}: {str(e)}")
 
-    try:
-        db.delete(wardrobe_item)
-        db.commit()
-        logger.info(f"Wardrobe item with ID {item_id} deleted successfully.")
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Failed to delete wardrobe item: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to delete wardrobe item: {str(e)}")
+    # If there are any items not found, return a 404 error
+    if not_found_items:
+        raise HTTPException(status_code=404, detail=f"Wardrobe items with IDs {', '.join(map(str, not_found_items))} not found.")
 
     return
 
