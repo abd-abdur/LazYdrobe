@@ -75,7 +75,6 @@ class UserBase(BaseModel):
         orm_mode = True
 
 
-
 class UserCreate(UserBase):
     password: str = Field(..., min_length=6)
 
@@ -122,7 +121,6 @@ class LoginResponse(BaseModel):
 class WeatherRequest(BaseModel):
     user_id: int 
 
-
 class WeatherResponse(BaseModel):
     date: datetime
     location: str
@@ -150,6 +148,7 @@ class FashionTrendResponse(BaseModel):
         orm_mode = True
 
 # Wardrobe Item Schemas
+
 class WardrobeItemBase(BaseModel):
     clothing_type: Optional[str] = Field(..., min_length=3, max_length=50)
     for_weather: Optional[str] = None
@@ -190,6 +189,38 @@ class WardrobeItemResponse(WardrobeItemBase):
     class Config:
         orm_mode = True
 
+# Outfit
+# waypoint
+
+class OutfitBase(BaseModel):
+    user_id: int
+    clothings: Optional[List[str]] = None
+    occasion: Optional[List[str]] = None
+    for_weather: Optional[str] = None
+    source_url: Optional[str] = None
+
+class OutfitCreate(OutfitBase):
+    user_id: int
+
+# To be implemented, maybe
+# Waypoint
+# class OutfitUpdate(BaseModel):
+#     clothings: Optional[List[str]] = None
+#     occasion: Optional[List[str]] = None
+#     for_weather: Optional[str] = None
+#     source_url: Optional[str] = None
+
+class OutfitResponse(OutfitBase):
+    outfit_id: int
+    clothings: List[str]
+    occasion: List[str]
+    for_weather: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+# Outfit Suggestion
+
 class OutfitComponent(BaseModel):
     clothing_type: str
     item_id: int
@@ -199,6 +230,7 @@ class OutfitComponent(BaseModel):
     
     class Config:
         orm_mode = True
+
 
 class OutfitSuggestionResponse(BaseModel):
     suggestion_id: int
@@ -449,7 +481,6 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     return db_user
 
 
-
 ## User Login
 
 @app.post("/login", response_model=LoginResponse)
@@ -570,12 +601,11 @@ def create_wardrobe_item(item: WardrobeItemCreate, db: Session = Depends(get_db)
         db.commit()
         db.refresh(db_item)
         logger.info(f"Wardrobe item with ID {db_item.item_id} created successfully.")
+        return db_item
     except Exception as e:
         db.rollback()
         logger.error(f"Failed to create wardrobe item: {e}")
         raise HTTPException(status_code=500, detail="Failed to create wardrobe item.")
-
-    return db_item
 
 ## Get Wardrobe Items for User
 
@@ -739,8 +769,33 @@ def get_fashion_trends(db: Session = Depends(get_db)):
     trends = db.query(FashionTrend).order_by(FashionTrend.date_added.desc()).all()
     return trends
 
+## Create Custom Outfit
+## waypoint
+@app.post("/outfits/", response_model=OutfitResponse, status_code=status.HTTP_201_CREATED)
+def create_outfit(outfit: OutfitCreate, db: Session = Depends(get_db)):
+    """
+    Create a customized outfit and save it to the database
+    """
+    # Create a new outfit instance from the provided data
+    db_outfit = Outfit(
+        user_id=outfit.user_id,
+        occasion=outfit.occasion,
+        for_weather=outfit.for_weather,
+        clothings=outfit.clothings
+    )
+    
+    # Add the new outfit to the database
+    db.add(db_outfit)
+    try:
+        db.commit()
+        db.refresh(db_outfit)
+        logger.info(f"Outfit with ID {db_outfit.item_id} created successfully.")
+        return db_outfit
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Failed to create outfit")
 
-# main.py
+# Outfit suggest
 
 @app.post("/outfits/suggest", response_model=OutfitSuggestionCreateResponse, status_code=status.HTTP_201_CREATED)
 def suggest_outfit(request: OutfitSuggestionRequest, db: Session = Depends(get_db)):

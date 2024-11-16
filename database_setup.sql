@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS outfits (
     occasion JSON,
     for_weather VARCHAR(255),
     source_url VARCHAR(511),
-    date_suggested TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_user_outfit FOREIGN KEY (user_id)
         REFERENCES users(user_id)
         ON DELETE CASCADE
