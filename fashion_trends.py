@@ -8,7 +8,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, scoped_session, sessionmaker
 from datetime import datetime
 import time
 import openai
@@ -17,7 +17,7 @@ from typing import List, Optional
 import re
 import string
 import traceback
-
+from sqlalchemy import create_engine
 import spacy
 
 # Initialize SpaCy English model
@@ -458,42 +458,28 @@ def validate_search_phrase(search_phrase: str) -> bool:
 def determine_optimal_clusters(embeddings: np.ndarray, max_k: int = ELBOW_METHOD_MAX_K) -> int:
     """
     Determines the optimal number of clusters using the Elbow Method.
-    
-    Args:
-        embeddings (np.ndarray): Array of embedding vectors.
-        max_k (int): Maximum number of clusters to test.
-        
-    Returns:
-        int: Optimal number of clusters.
     """
+    num_samples = len(embeddings)
+    if num_samples < 2:
+        logger.error("Insufficient samples for clustering.")
+        raise ValueError("At least 2 samples are required for clustering.")
+
+    max_k = min(max_k, num_samples)  # Adjust max_k to the number of samples
     inertia = []
     K = range(2, max_k + 1)
+
     for k in K:
         kmeans = KMeans(n_clusters=k, random_state=42)
         kmeans.fit(embeddings)
         inertia.append(kmeans.inertia_)
-    
-    # Optional: Plotting the Elbow Curve
-    try:
-        import matplotlib.pyplot as plt
-        plt.figure(figsize=(8, 4))
-        plt.plot(K, inertia, 'bx-')
-        plt.xlabel('Number of clusters')
-        plt.ylabel('Inertia')
-        plt.title('Elbow Method For Optimal k')
-        plt.show()
-    except ImportError:
-        logger.warning("matplotlib not installed. Skipping Elbow plot.")
-    
-    # Automatically determine the elbow point using a simple heuristic
-    # For demonstration purposes, we'll return a fixed value
-    # Implement more sophisticated logic if needed
-    optimal_k = 5  # Adjust based on the Elbow plot
+
+    # Use a heuristic to find the elbow point (or return a default value)
+    optimal_k = max(2, min(5, max_k))  # Simple heuristic for demonstration
     logger.info(f"Determined optimal number of clusters: {optimal_k}")
     return optimal_k
 
 
-def fetch_ebay_products(search_query: str, limit: int = 50) -> List[dict]:
+def fetch_ebay_products(search_query: str, limit: int = 50, max_pages: int = 10) -> List[dict]:
     """
     Fetches products from eBay API based on the search_query.
     Returns a list of dictionaries containing product details.
@@ -501,6 +487,7 @@ def fetch_ebay_products(search_query: str, limit: int = 50) -> List[dict]:
     Args:
         search_query (str): The search keywords.
         limit (int): Number of products to fetch.
+        max_pages (int): Maximum number of pages to fetch per query.
         
     Returns:
         List[dict]: A list of product dictionaries.
@@ -513,7 +500,7 @@ def fetch_ebay_products(search_query: str, limit: int = 50) -> List[dict]:
         "X-EBAY-SOA-RESPONSE-DATA-FORMAT": "JSON",
     }
     params = {
-        "keywords": search_query,  # Use cleaned search_query
+        "keywords": search_query,
         "paginationInput.entriesPerPage": min(limit, EBAY_API_MAX_ENTRIES_PER_PAGE),  # eBay allows max 100 per page
         "paginationInput.pageNumber": 1,
         "outputSelector": "SellerInfo",
@@ -569,6 +556,9 @@ def fetch_ebay_products(search_query: str, limit: int = 50) -> List[dict]:
 
             products.append(product)
 
+            if len(products) >= limit:
+                break
+
         # Handle pagination if more items are needed
         pagination_output = search_response.get('paginationOutput', [{}])[0]
         total_entries = int(pagination_output.get('totalEntries', [0])[0])
@@ -576,7 +566,7 @@ def fetch_ebay_products(search_query: str, limit: int = 50) -> List[dict]:
         logger.info(f"Total entries: {total_entries}, Total pages: {total_pages}")
 
         current_page = 1
-        while len(products) < limit and current_page < total_pages:
+        while len(products) < limit and current_page < total_pages and current_page < max_pages:
             current_page += 1
             params["paginationInput.pageNumber"] = current_page
             logger.info(f"Fetching page {current_page} for query '{search_query}'")
@@ -593,6 +583,10 @@ def fetch_ebay_products(search_query: str, limit: int = 50) -> List[dict]:
 
             items = search_response.get('searchResult', [{}])[0].get('item', [])
             logger.info(f"Fetched {len(items)} items from eBay on page {current_page} for query '{search_query}'.")
+
+            if not items:
+                logger.info(f"No more items found on page {current_page}. Stopping pagination.")
+                break  # Exit if no items are found on the current page
 
             for item in items:
                 ebay_item_id = item.get("itemId", [None])[0]
@@ -656,8 +650,9 @@ def fetch_and_insert_trend_products(db: Session, trend: FashionTrend, limit_per_
         return
 
     logger.info(f"Fetching products for trend '{trend.trend_name}' with search phrase '{search_phrase}'.")
-    # Fetch products from eBay
-    products = fetch_ebay_products(search_phrase, limit=limit_per_trend)
+    
+    # Fetch products from eBay with a maximum of 10 pages
+    products = fetch_ebay_products(search_phrase, limit=limit_per_trend, max_pages=10)
     logger.info(f"Fetched {len(products)} products for trend '{trend.trend_name}'.")
 
     # Insert products into the database
@@ -698,6 +693,7 @@ def fetch_and_insert_trend_products(db: Session, trend: FashionTrend, limit_per_
         logger.error(f"Error inserting products for trend '{trend.trend_name}': {e}")
         logger.debug(traceback.format_exc())
 
+
 def populate_ecommerce_products(db: Session, limit_per_trend: int = 10):
     """
     Populates the ecommerce_products table based on the current fashion trends.
@@ -716,19 +712,6 @@ def populate_ecommerce_products(db: Session, limit_per_trend: int = 10):
             logger.error(f"Failed to fetch and insert products for trend '{trend.trend_name}': {e}")
             logger.debug(traceback.format_exc())
             continue  # Proceed with the next trend
-
-def test_ebay_api():
-    """
-    Tests the eBay API with a known working search phrase.
-    """
-    test_search_query = "Denim jacket"
-    products = fetch_ebay_products(test_search_query, limit=5)
-    if products:
-        logger.info(f"Test Query '{test_search_query}' fetched {len(products)} products.")
-        for product in products:
-            logger.info(f"Product Name: {product['product_name']}, eBay ID: {product['ebay_item_id']}")
-    else:
-        logger.warning(f"No products fetched for test query '{test_search_query}'.")
 
 def fetch_and_update_fashion_trends(db: Session):
     """
@@ -825,67 +808,15 @@ def fetch_and_update_fashion_trends(db: Session):
     else:
         logger.error("No trends to save to the database.")
 
-
-def determine_optimal_clusters(embeddings: np.ndarray, max_k: int = ELBOW_METHOD_MAX_K) -> int:
-    """
-    Determines the optimal number of clusters using the Elbow Method.
-    """
-    num_samples = len(embeddings)
-    if num_samples < 2:
-        logger.error("Insufficient samples for clustering.")
-        raise ValueError("At least 2 samples are required for clustering.")
-
-    max_k = min(max_k, num_samples)  # Adjust max_k to the number of samples
-    inertia = []
-    K = range(2, max_k + 1)
-
-    for k in K:
-        kmeans = KMeans(n_clusters=k, random_state=42)
-        kmeans.fit(embeddings)
-        inertia.append(kmeans.inertia_)
-
-    # Optional: Plot the Elbow Curve
-    try:
-        import matplotlib.pyplot as plt
-        plt.figure(figsize=(8, 4))
-        plt.plot(K, inertia, 'bx-')
-        plt.xlabel('Number of clusters')
-        plt.ylabel('Inertia')
-        plt.title('Elbow Method For Optimal k')
-        plt.show()
-    except ImportError:
-        logger.warning("matplotlib not installed. Skipping Elbow plot.")
-
-    # Use a heuristic to find the elbow point (or return a default value)
-    optimal_k = max(2, min(5, max_k))  # Simple heuristic for demonstration
-    logger.info(f"Determined optimal number of clusters: {optimal_k}")
-    return optimal_k
-
-
-def test_ebay_api():
-    """
-    Tests the eBay API with a known working search phrase.
-    """
-    test_search_query = "Denim jacket"
-    products = fetch_ebay_products(test_search_query, limit=5)
-    if products:
-        logger.info(f"Test Query '{test_search_query}' fetched {len(products)} products.")
-        for product in products:
-            logger.info(f"Product Name: {product['product_name']}, eBay ID: {product['ebay_item_id']}")
-    else:
-        logger.warning(f"No products fetched for test query '{test_search_query}'.")
-
 def main():
     """
     Main function to execute the fashion trends fetching and product population.
     """
     # Initialize database session (assuming SQLAlchemy sessionmaker is set up)
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-
-    engine = create_engine(DATABASE_URL)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    db = SessionLocal()
+    engine = create_engine(DATABASE_URL, pool_size=20, max_overflow=10, pool_timeout=30, pool_recycle=1800)
+    SessionFactory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    SessionScoped = scoped_session(SessionFactory)
+    db = SessionScoped()
 
     try:
         # Fetch and update fashion trends
@@ -894,7 +825,7 @@ def main():
         # Populate ecommerce products based on the updated trends
         populate_ecommerce_products(db, limit_per_trend=10)
     finally:
-        db.close()
+        db.remove()  # Use remove() with scoped_session to properly handle sessions
 
 if __name__ == "__main__":
     main()

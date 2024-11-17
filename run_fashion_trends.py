@@ -3,7 +3,7 @@
 import os
 from sqlalchemy.orm import Session
 from models import Base, FashionTrend, EcommerceProduct
-from fashion_trends import fetch_and_update_fashion_trends, populate_ecommerce_products, test_ebay_api
+from fashion_trends import fetch_and_update_fashion_trends, populate_ecommerce_products
 from dotenv import load_dotenv
 import logging
 
@@ -42,7 +42,6 @@ def main():
         db.close()
 
 if __name__ == "__main__":
-    test_ebay_api()
     # Optional: Uncomment the following line to debug the EcommerceProduct model
     # debug_ecommerce_product()
 

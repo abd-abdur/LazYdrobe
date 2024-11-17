@@ -123,12 +123,14 @@ def select_relevant_clothing_items(db: Session, clothing_types: List[str]) -> Li
     """
     return db.query(EcommerceProduct).filter(EcommerceProduct.suggested_item_type.in_(clothing_types)).all()
 
+# outfit_suggester.py
+
 def generate_outfit_combinations(clothing_items: List[EcommerceProduct]) -> List[List[Dict[str, Any]]]:
     """
     Generates outfit combinations by grouping clothing items logically.
     Each outfit is a list of clothing components (e.g., top, bottom, shoes).
     """
-    # Define categories (e.g., top, bottom, shoes)
+    # Define categories (e.g., Top, Bottom, Shoes)
     categories = {
         'Top': ['T-Shirt', 'Tank Top', 'Sweater', 'Jacket', 'Coat', 'Hoodie'],
         'Bottom': ['Shorts', 'Jeans', 'Dress'],
@@ -160,7 +162,7 @@ def generate_outfit_combinations(clothing_items: List[EcommerceProduct]) -> List
         for idx, item in enumerate(combination):
             component = {
                 'clothing_type': category_order[idx],
-                'product_id': item.product_id,
+                'item_id': item.product_id,  # Correct field
                 'product_name': item.product_name,
                 'image_url': item.image_url,
                 'eBay_link': None  # To be filled later
@@ -171,6 +173,7 @@ def generate_outfit_combinations(clothing_items: List[EcommerceProduct]) -> List
             break  # Limit to 5 outfits for practicality
     
     return outfit_combinations
+
 
 def fetch_similar_products_for_outfits(outfit_combinations: List[List[Dict[str, Any]]]) -> List[List[Dict[str, Any]]]:
     """
