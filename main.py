@@ -227,6 +227,7 @@ class OutfitComponent(BaseModel):
     product_name: str
     image_url: Optional[str] = None
     eBay_link: Optional[List[str]] = None 
+    gender: str
     
     class Config:
         orm_mode = True
@@ -235,6 +236,7 @@ class OutfitComponent(BaseModel):
 class OutfitSuggestionResponse(BaseModel):
     suggestion_id: int
     outfit_details: List[List[OutfitComponent]]
+    gender: str
     date_suggested: datetime
 
     class Config:
@@ -246,6 +248,7 @@ class OutfitSuggestionRequest(BaseModel):
 class OutfitSuggestionCreateResponse(BaseModel):
     suggestion_id: int
     outfit_details: List[List[OutfitComponent]]
+    gender: str
     date_suggested: datetime
 
     class Config:
@@ -789,13 +792,12 @@ def create_outfit(outfit: OutfitCreate, db: Session = Depends(get_db)):
     try:
         db.commit()
         db.refresh(db_outfit)
-        logger.info(f"Outfit with ID {db_outfit.item_id} created successfully.")
+        logger.info(f"Outfit with ID {db_outfit.outfit_id} created successfully.")
         return db_outfit
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail="Failed to create outfit")
 
-# Outfit suggest
 
 @app.post("/outfits/suggest", response_model=OutfitSuggestionCreateResponse, status_code=status.HTTP_201_CREATED)
 def suggest_outfit(request: OutfitSuggestionRequest, db: Session = Depends(get_db)):
@@ -814,7 +816,6 @@ def suggest_outfit(request: OutfitSuggestionRequest, db: Session = Depends(get_d
     except Exception as e:
         logger.error(f"Error during outfit suggestion: {e}")
         raise HTTPException(status_code=500, detail="Failed to suggest outfits.")
-
 
 
 from sqlalchemy.orm import joinedload

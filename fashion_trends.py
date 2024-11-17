@@ -65,24 +65,56 @@ def debug_ecommerce_product():
     ecommerce_product = EcommerceProduct()
     print("EcommerceProduct Attributes:", ecommerce_product.__dict__)
 
-def extract_clothing_type(category_name: Optional[str]) -> str:
+def determine_product_gender_gpt(product_name: str) -> str:
     """
-    Extracts and maps clothing types from category names using NLP.
-    Handles plural forms and lemmatization for improved accuracy.
+    Determines the gender category using GPT-4 based on the product name.
+    Returns 'Male', 'Female', or 'Unisex'.
+    Ensures that 'Unisex' is only used if explicitly stated.
+    Discards the clothing if it cannot be determined as 'Male' or 'Female'.
+    """
+    try:
+        logger.info(f"Determining gender for product: '{product_name}' using GPT-4.")
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert in fashion trends and gender categorization. "
+                        "Determine whether the following product is designed for 'Male', 'Female', or is 'Unisex'. "
+                        "Respond with only one of these three options. "
+                        "Only categorize as 'Unisex' if it is explicitly stated as such."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"Product Name: {product_name}"
+                }
+            ],
+            max_tokens=10,
+            temperature=0.2,
+        )
+        gender = response['choices'][0]['message']['content'].strip()
+        gender = gender.capitalize()
+        if gender not in ['Male', 'Female', 'Unisex']:
+            logger.warning(f"GPT-4 returned unexpected gender '{gender}' for product '{product_name}'. Defaulting to 'Unisex'.")
+            return 'Unisex'
+        logger.info(f"GPT-4 classified product '{product_name}' as '{gender}'.")
+        return gender
+    except Exception as e:
+        logger.error(f"Error determining gender with GPT-4 for product '{product_name}': {e}")
+        logger.debug(traceback.format_exc())
+        return 'Unisex'  # Default to 'Unisex' in case of failure
     
-    Args:
-        category_name (Optional[str]): The category name from eBay.
-        
-    Returns:
-        str: Mapped clothing type or 'Other' if no match is found.
-    """
+def extract_clothing_type(category_name: Optional[str]) -> str:
     clothing_types = [
         'T-Shirt', 'Tshirts', 'Jeans', 'Jackets', 'Dress', 'Dresses',
         'Sweater', 'Sweaters', 'Coat', 'Coats', 'Hoodie', 'Hoodies',
         'Tank Top', 'Tank Tops', 'Heavy Boots', 'Heavy Boot', 'Sneakers',
         'Shoe', 'Sandals', 'Boots', 'Skirt', 'Skirts', 'Blouse',
         'Blouses', 'Shorts', 'Leggings', 'Blazer', 'Blazers',
-        'Cardigan', 'Cardigans', 'Socks', 'Sock', 'Scarf', 'Scarves'
+        'Cardigan', 'Cardigans', 'Socks', 'Sock', 'Scarf', 'Scarves',
+        'Pants', 'Trouser', 'Trousers', 'Cargo Pants', 'Corduroy Pants'
     ]
     if not category_name:
         return 'Other'
@@ -93,6 +125,7 @@ def extract_clothing_type(category_name: Optional[str]) -> str:
         if lemma in clothing_types:
             return lemma
     return 'Other'
+
 
 
 def extract_text_from_url(url: str, retries: int = 3, delay: int = 2) -> str:
@@ -478,7 +511,6 @@ def determine_optimal_clusters(embeddings: np.ndarray, max_k: int = ELBOW_METHOD
     logger.info(f"Determined optimal number of clusters: {optimal_k}")
     return optimal_k
 
-
 def fetch_ebay_products(search_query: str, limit: int = 50, max_pages: int = 10) -> List[dict]:
     """
     Fetches products from eBay API based on the search_query.
@@ -533,6 +565,7 @@ def fetch_ebay_products(search_query: str, limit: int = 50, max_pages: int = 10)
             currency = item.get("sellingStatus", [{}])[0].get("currentPrice", [{}])[0].get("__currency__", "USD")
             product_url = item.get("viewItemURL", [None])[0]
             image_url = item.get("galleryURL", [None])[0]
+            
 
             # Skip items with missing essential data
             if not all([ebay_item_id, product_name, product_url]):
@@ -541,6 +574,7 @@ def fetch_ebay_products(search_query: str, limit: int = 50, max_pages: int = 10)
 
             # Map category to clothing type
             clothing_type = extract_clothing_type(category_name)
+            gender = determine_product_gender_gpt(product_name)
 
             product = {
                 'ebay_item_id': ebay_item_id,
@@ -551,7 +585,8 @@ def fetch_ebay_products(search_query: str, limit: int = 50, max_pages: int = 10)
                 'product_url': product_url,
                 'image_url': image_url,
                 'date_suggested': datetime.utcnow(),
-                'user_id': None  # Set to appropriate user_id if necessary
+                'user_id': None,  # Set to appropriate user_id if necessary
+                'gender': gender
             }
 
             products.append(product)
@@ -653,6 +688,7 @@ def fetch_and_insert_trend_products(db: Session, trend: FashionTrend, limit_per_
     
     # Fetch products from eBay with a maximum of 10 pages
     products = fetch_ebay_products(search_phrase, limit=limit_per_trend, max_pages=10)
+    
     logger.info(f"Fetched {len(products)} products for trend '{trend.trend_name}'.")
 
     # Insert products into the database
@@ -676,7 +712,8 @@ def fetch_and_insert_trend_products(db: Session, trend: FashionTrend, limit_per_
                 product_url=product['product_url'],
                 image_url=product['image_url'],
                 date_suggested=product['date_suggested'],
-                user_id=product['user_id']
+                user_id=product['user_id'],
+                gender=product['gender'] 
             )
             db.add(new_product)
             inserted_count += 1
