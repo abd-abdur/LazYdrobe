@@ -1,10 +1,9 @@
-#fetch_ebay_data.py
+# fetch_ebay_data.py
 
 import os
 import requests
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from models import Base, EcommerceProduct
+from sqlalchemy.orm import Session
+from models import EcommerceProduct
 from dotenv import load_dotenv
 from datetime import datetime
 import logging
@@ -31,9 +30,13 @@ if not EBAY_APP_ID:
     exit(1)
 
 # Create the SQLAlchemy engine
+from sqlalchemy import create_engine
+
 engine = create_engine(DATABASE_URL, echo=False)
 
 # Create a configured "Session" class
+from sqlalchemy.orm import sessionmaker
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def fetch_ebay_products(search_query: str, limit: int = 50) -> List[dict]:
@@ -72,7 +75,7 @@ def fetch_ebay_products(search_query: str, limit: int = 50) -> List[dict]:
             ack = search_response.get('ack', [None])[0]
             if ack != 'Success':
                 error_message = search_response.get('errorMessage', [{}])[0].get('error', [{}])[0].get('message', ['Unknown error'])[0]
-                logger.error(f"API Error: {error_message}")
+                logger.error(f"eBay API Error: {error_message}")
                 break
 
             # Determine total pages from the response
@@ -122,7 +125,6 @@ def fetch_similar_ebay_products(product_name: str, limit: int = 3) -> List[str]:
     Fetches similar products from eBay based on the product name.
     Returns a list of eBay product URLs.
     """
-
     ebay_api_url = "https://svcs.ebay.com/services/search/FindingService/v1"
     headers = {
         "X-EBAY-SOA-SECURITY-APPNAME": EBAY_APP_ID,
@@ -212,53 +214,3 @@ def insert_products(session: Session, items: List[dict]):
     except Exception as e:
         session.rollback()
         logger.error(f"Error inserting products: {e}")
-
-def parse_arguments() -> argparse.Namespace:
-    """
-    Parse command-line arguments.
-    """
-    parser = argparse.ArgumentParser(description="Fetch and insert eBay products into the database.")
-    parser.add_argument(
-        '-q', '--query',
-        type=str,
-        required=True,
-        help="Search query for eBay products."
-    )
-    parser.add_argument(
-        '-l', '--limit',
-        type=int,
-        default=50,
-        help="Number of products to fetch (max 100 per page). Default is 50."
-    )
-    parser.add_argument(
-        '-m', '--mode',
-        type=str,
-        choices=['limited', 'all'],
-        default='limited',
-        help="Mode of fetching: 'limited' for specified limit or 'all' to fetch all available products."
-    )
-    return parser.parse_args()
-
-def main():
-    args = parse_arguments()
-    search_query = args.query
-    limit = args.limit if args.mode == 'limited' else None  # None signifies no limit
-
-    logger.info(f"Starting fetch for query '{search_query}' with mode '{args.mode}'.")
-
-    items = fetch_ebay_products(search_query, limit=limit if limit else 1000)  # Set a high limit if 'all'
-
-    if not items:
-        logger.info("No items fetched from eBay.")
-        return
-
-    # Create a new database session
-    session = SessionLocal()
-
-    try:
-        insert_products(session, items)
-    finally:
-        session.close()
-
-if __name__ == "__main__":
-    main()

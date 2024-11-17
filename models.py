@@ -37,8 +37,6 @@ class User(Base):
     fashion_trends = relationship("FashionTrend", back_populates="user", cascade="all, delete-orphan")
     outfit_suggestions = relationship("OutfitSuggestion", back_populates="user", cascade="all, delete-orphan")
 
-
-
 class EcommerceProduct(Base):
     __tablename__ = "ecommerce_products"
 
@@ -47,6 +45,7 @@ class EcommerceProduct(Base):
     product_name = Column(String(255), nullable=False)
     suggested_item_type = Column(String(255), nullable=True)
     price = Column(Float, nullable=False)
+    currency = Column(String(10), nullable=False) 
     product_url = Column(String(255), nullable=False)
     image_url = Column(String(255), nullable=True)
     date_suggested = Column(DateTime, server_default=func.now())
@@ -91,6 +90,7 @@ class FashionTrend(Base):
     trend_name = Column(String(255), nullable=False, index=True)
     trend_description = Column(Text, nullable=False)
     date_added = Column(DateTime, server_default=func.now())
+    trend_search_phrase = Column(String(255), nullable=True)
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
 
     user = relationship("User", back_populates="fashion_trends")
@@ -114,8 +114,6 @@ class WeatherData(Base):
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
 
     user = relationship("User", back_populates="weather_data")
-
-# models.py
 
 class OutfitSuggestion(Base):
     __tablename__ = "outfit_suggestions"

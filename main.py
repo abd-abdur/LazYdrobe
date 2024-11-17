@@ -801,7 +801,10 @@ def create_outfit(outfit: OutfitCreate, db: Session = Depends(get_db)):
 def suggest_outfit(request: OutfitSuggestionRequest, db: Session = Depends(get_db)):
     """
     Suggests outfits for the user based on current weather and fashion trends.
+    Does not consider the user's existing wardrobe.
     """
+    logger.info(f"Received outfit suggestion request for user_id={request.user_id}")
+    
     try:
         outfit_suggestion = suggest_outfits(request.user_id, db)
         return outfit_suggestion
@@ -811,6 +814,7 @@ def suggest_outfit(request: OutfitSuggestionRequest, db: Session = Depends(get_d
     except Exception as e:
         logger.error(f"Error during outfit suggestion: {e}")
         raise HTTPException(status_code=500, detail="Failed to suggest outfits.")
+
 
 
 from sqlalchemy.orm import joinedload

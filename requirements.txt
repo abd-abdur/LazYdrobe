@@ -2,7 +2,7 @@ requests
 pandas
 beautifulsoup4
 python-dotenv
-
+spacy
 fastapi
 uvicorn
 sqlalchemy
