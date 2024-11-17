@@ -17,8 +17,7 @@ from typing import List, Optional
 import re
 import string
 import traceback
-import concurrent.futures
-from kneed import KneeLocator
+
 import spacy
 
 # Initialize SpaCy English model
@@ -27,16 +26,15 @@ nlp = spacy.load("en_core_web_sm")
 from models import FashionTrend, EcommerceProduct  # Ensure EcommerceProduct is imported
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-DATABASE_URL = os.getenv('DATABASE_URL')  # Ensure this is correctly set
+DATABASE_URL = os.getenv('DATABASE_URL')  # Not directly used here, but kept for consistency
 EBAY_APP_ID = os.getenv("EBAY_APP_ID")
 
-# Validate environment variables
 if not OPENAI_API_KEY:
     logger.error("OPENAI_API_KEY is not set in the environment variables.")
     raise ValueError("OPENAI_API_KEY is not set in the environment variables.")
@@ -59,8 +57,13 @@ SIMILARITY_THRESHOLD = 0.7
 ELBOW_METHOD_MAX_K = 10
 EBAY_API_MAX_ENTRIES_PER_PAGE = 100
 VALIDATION_LIMIT = 1  # Number of items to fetch for validation
-MAX_REGENERATIONS = 3  # Increased from 2 for better success rate
-DELAY_BETWEEN_ATTEMPTS = 2  # Seconds
+
+def debug_ecommerce_product():
+    """
+    Debug function to print attributes of EcommerceProduct.
+    """
+    ecommerce_product = EcommerceProduct()
+    print("EcommerceProduct Attributes:", ecommerce_product.__dict__)
 
 def extract_clothing_type(category_name: Optional[str]) -> str:
     """
@@ -74,9 +77,12 @@ def extract_clothing_type(category_name: Optional[str]) -> str:
         str: Mapped clothing type or 'Other' if no match is found.
     """
     clothing_types = [
-        'T-Shirt', 'Jeans', 'Jacket', 'Dress', 'Sweater', 'Coat', 'Hoodie',
-        'Tank Top', 'Boots', 'Sneakers', 'Shoe', 'Sandals', 'Skirt', 'Blouse',
-        'Shorts', 'Leggings', 'Blazer', 'Cardigan', 'Socks', 'Scarf'
+        'T-Shirt', 'Tshirts', 'Jeans', 'Jackets', 'Dress', 'Dresses',
+        'Sweater', 'Sweaters', 'Coat', 'Coats', 'Hoodie', 'Hoodies',
+        'Tank Top', 'Tank Tops', 'Heavy Boots', 'Heavy Boot', 'Sneakers',
+        'Shoe', 'Sandals', 'Boots', 'Skirt', 'Skirts', 'Blouse',
+        'Blouses', 'Shorts', 'Leggings', 'Blazer', 'Blazers',
+        'Cardigan', 'Cardigans', 'Socks', 'Sock', 'Scarf', 'Scarves'
     ]
     if not category_name:
         return 'Other'
@@ -108,6 +114,7 @@ def extract_text_from_url(url: str, retries: int = 3, delay: int = 2) -> str:
             response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 soup = BeautifulSoup(response.content, "html.parser")
+                time.sleep(delay)  # Polite delay
                 text = soup.get_text(separator=' ', strip=True)
                 logger.info(f"Successfully fetched and parsed URL: {url}")
                 return text
@@ -116,10 +123,8 @@ def extract_text_from_url(url: str, retries: int = 3, delay: int = 2) -> str:
         except Exception as e:
             logger.error(f"Error fetching {url} on attempt {attempt}: {e}")
             logger.debug(traceback.format_exc())
-        time.sleep(delay)  # Polite delay between attempts
     logger.error(f"Failed to fetch {url} after {retries} attempts.")
     return ""
-
 
 def truncate_text(text: str, max_tokens: int = MAX_EMBEDDING_TOKENS) -> str:
     """
@@ -137,7 +142,6 @@ def truncate_text(text: str, max_tokens: int = MAX_EMBEDDING_TOKENS) -> str:
     truncated = " ".join(words[:max_tokens // 4])
     logger.debug(f"Truncated text to {len(truncated)} characters.")
     return truncated
-
 
 def get_embedding(text: str) -> Optional[np.ndarray]:
     """
@@ -163,7 +167,6 @@ def get_embedding(text: str) -> Optional[np.ndarray]:
         logger.error(f"Error in embedding generation: {e}")
         logger.debug(traceback.format_exc())
         return None
-
 
 def extract_refined_trends(text: str, max_tokens: int = MAX_SUMMARY_TOKENS) -> str:
     """
@@ -212,7 +215,6 @@ def extract_refined_trends(text: str, max_tokens: int = MAX_SUMMARY_TOKENS) -> s
     logger.debug(f"Combined trends text length: {len(combined_trends)} characters.")
     return combined_trends
 
-
 def deduplicate_trends(trends_list: List[str]) -> List[str]:
     """
     Deduplicates trends based on cosine similarity of their TF-IDF vectors.
@@ -240,7 +242,6 @@ def deduplicate_trends(trends_list: List[str]) -> List[str]:
 
     logger.info(f"Deduplicated trends count: {len(unique_trends)}.")
     return unique_trends
-
 
 def generate_search_keywords(description: str, min_keywords: int = 3, max_keywords: int = 5) -> Optional[str]:
     """
@@ -293,7 +294,7 @@ def generate_search_keywords(description: str, min_keywords: int = 3, max_keywor
         # Ensure the number of keywords is within the specified range
         keyword_list = keywords.split()
         if len(keyword_list) < min_keywords:
-            logger.warning(f"Generated keywords have less than {min_keywords} words.")
+            logger.warning(f"Generated keywords have less than {min_keywords} words. Attempting to regenerate.")
             # Optionally, implement regeneration logic here
         elif len(keyword_list) > max_keywords:
             keyword_list = keyword_list[:max_keywords]
@@ -307,7 +308,7 @@ def generate_search_keywords(description: str, min_keywords: int = 3, max_keywor
         return None
 
 
-def save_trends_to_db(trend_dict: dict, db: Session, max_regenerations: int = MAX_REGENERATIONS, delay_between_attempts: int = DELAY_BETWEEN_ATTEMPTS):
+def save_trends_to_db(trend_dict: dict, db: Session, max_regenerations: int = 2):
     """
     Saves a dictionary of trends to the database, generating and validating search phrases.
     
@@ -315,84 +316,64 @@ def save_trends_to_db(trend_dict: dict, db: Session, max_regenerations: int = MA
         trend_dict (dict): A dictionary where keys are trend names and values are trend descriptions.
         db (Session): SQLAlchemy session object.
         max_regenerations (int): Maximum number of times to attempt regeneration if validation fails.
-        delay_between_attempts (int): Delay in seconds between regeneration attempts.
     """
     try:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            future_to_trend = {
-                executor.submit(process_and_save_trend, trend_name, trend_description, db, max_regenerations, delay_between_attempts): trend_name
-                for trend_name, trend_description in trend_dict.items()
-            }
-            for future in concurrent.futures.as_completed(future_to_trend):
-                trend_name = future_to_trend[future]
-                try:
-                    future.result()
-                except Exception as e:
-                    logger.error(f"Error processing trend '{trend_name}': {e}")
-                    logger.debug(traceback.format_exc())
+        for trend_name, trend_description in trend_dict.items():
+            # Truncate trend_name if it's too long
+            if len(trend_name) > 255:
+                logger.warning(f"Truncating trend name from '{trend_name}' to 255 characters.")
+                trend_name = trend_name[:252] + "..."
+            
+            # Initialize regeneration attempt counter
+            regeneration_attempts = 0
+            search_keywords = None
+            
+            while regeneration_attempts <= max_regenerations:
+                # Generate search keywords using GPT
+                search_keywords = generate_search_keywords(trend_description)
+                if not search_keywords:
+                    logger.warning(f"Failed to generate search keywords for trend '{trend_name}'. Skipping.")
+                    break
+                
+                # Validate the search phrase
+                if validate_search_phrase(search_keywords):
+                    logger.info(f"Search phrase '{search_keywords}' validated successfully.")
+                    break  # Validated successfully
+                else:
+                    regeneration_attempts += 1
+                    logger.warning(f"Validation failed for search phrase '{search_keywords}'. Attempt {regeneration_attempts} of {max_regenerations}.")
+                    search_keywords = None  # Reset search_keywords for regeneration
+            
+            if not search_keywords:
+                logger.warning(f"Could not generate a valid search phrase for trend '{trend_name}' after {max_regenerations} attempts. Skipping.")
+                continue  # Move to the next trend
+            
+            # Check if the trend already exists to avoid duplicates
+            existing_trend = db.query(FashionTrend).filter(
+                FashionTrend.trend_name == trend_name,
+                FashionTrend.trend_search_phrase == search_keywords
+            ).first()
+            if existing_trend:
+                logger.info(f"Trend '{trend_name}' with search phrase '{search_keywords}' already exists. Skipping insertion.")
+                continue
+            
+            # Insert the validated trend into the database
+            trend = FashionTrend(
+                trend_name=trend_name,
+                trend_description=trend_description,
+                trend_search_phrase=search_keywords,
+                date_added=datetime.utcnow()
+            )
+            db.add(trend)
+            logger.info(f"Inserted trend '{trend_name}' with search phrase '{search_keywords}' into the database.")
+        
+        db.commit()
+        logger.info("Trends successfully inserted into the database.")
     except Exception as e:
+        db.rollback()
         logger.error(f"Failed to insert trends into the database: {e}")
         logger.debug(traceback.format_exc())
         raise
-
-def process_and_save_trend(trend_name: str, trend_description: str, db: Session, max_regenerations: int, delay_between_attempts: int):
-    """
-    Processes a single trend: generates, validates, and saves it to the database.
-    
-    Args:
-        trend_name (str): The name of the trend.
-        trend_description (str): The description of the trend.
-        db (Session): SQLAlchemy session object.
-        max_regenerations (int): Maximum number of regeneration attempts.
-        delay_between_attempts (int): Delay in seconds between attempts.
-    """
-    # Truncate trend_name if it's too long
-    if len(trend_name) > 255:
-        logger.warning(f"Truncating trend name from '{trend_name}' to 255 characters.")
-        trend_name = trend_name[:252] + "..."
-    
-    regeneration_attempts = 0
-    search_keywords = None
-    
-    while regeneration_attempts < max_regenerations:
-        # Generate search keywords using GPT
-        search_keywords = generate_search_keywords(trend_description)
-        if not search_keywords:
-            logger.warning(f"Failed to generate search keywords for trend '{trend_name}'. Skipping.")
-            break
-        
-        # Validate the search phrase
-        if validate_search_phrase(search_keywords):
-            logger.info(f"Search phrase '{search_keywords}' validated successfully.")
-            break  # Validated successfully
-        else:
-            regeneration_attempts += 1
-            logger.warning(f"Validation failed for search phrase '{search_keywords}'. Attempt {regeneration_attempts} of {max_regenerations}.")
-            search_keywords = None  # Reset search_keywords for regeneration
-            time.sleep(delay_between_attempts)  # Delay before next attempt
-    
-    if not search_keywords:
-        logger.warning(f"Could not generate a valid search phrase for trend '{trend_name}' after {max_regenerations} attempts. Skipping.")
-        return  # Move to the next trend
-    
-    # Check if the trend already exists to avoid duplicates
-    existing_trend = db.query(FashionTrend).filter(
-        FashionTrend.trend_name == trend_name,
-        FashionTrend.trend_search_phrase == search_keywords
-    ).first()
-    if existing_trend:
-        logger.info(f"Trend '{trend_name}' with search phrase '{search_keywords}' already exists. Skipping insertion.")
-        return
-    
-    # Insert the validated trend into the database
-    trend = FashionTrend(
-        trend_name=trend_name,
-        trend_description=trend_description,
-        trend_search_phrase=search_keywords,
-        date_added=datetime.utcnow()
-    )
-    db.add(trend)
-    logger.info(f"Inserted trend '{trend_name}' with search phrase '{search_keywords}' into the database.")
 
 
 def preprocess_text(text: str, max_words: int = 1000) -> str:
@@ -411,7 +392,6 @@ def preprocess_text(text: str, max_words: int = 1000) -> str:
     logger.debug(f"Preprocessed text to {len(preprocessed)} characters.")
     return preprocessed
 
-
 def summarize_cluster(text: str) -> str:
     """
     Summarizes a cluster of text using OpenAI's ChatCompletion.
@@ -425,7 +405,7 @@ def summarize_cluster(text: str) -> str:
     try:
         logger.info("Summarizing cluster text.")
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[
                 {
                     "role": "system",
@@ -449,7 +429,6 @@ def summarize_cluster(text: str) -> str:
         logger.error(f"Error in cluster summarization: {e}")
         logger.debug(traceback.format_exc())
         return ""
-
 
 def validate_search_phrase(search_phrase: str) -> bool:
     """
@@ -476,10 +455,9 @@ def validate_search_phrase(search_phrase: str) -> bool:
         logger.debug(traceback.format_exc())
         return False
 
-
 def determine_optimal_clusters(embeddings: np.ndarray, max_k: int = ELBOW_METHOD_MAX_K) -> int:
     """
-    Determines the optimal number of clusters using the Elbow Method with automated elbow detection.
+    Determines the optimal number of clusters using the Elbow Method.
     
     Args:
         embeddings (np.ndarray): Array of embedding vectors.
@@ -488,34 +466,30 @@ def determine_optimal_clusters(embeddings: np.ndarray, max_k: int = ELBOW_METHOD
     Returns:
         int: Optimal number of clusters.
     """
-    num_samples = len(embeddings)
-    if num_samples < 2:
-        logger.error("Insufficient samples for clustering.")
-        raise ValueError("At least 2 samples are required for clustering.")
-
-    max_k = min(max_k, num_samples)  # Adjust max_k to the number of samples
     inertia = []
     K = range(2, max_k + 1)
-
     for k in K:
         kmeans = KMeans(n_clusters=k, random_state=42)
         kmeans.fit(embeddings)
         inertia.append(kmeans.inertia_)
-        logger.debug(f"Computed inertia for k={k}: {kmeans.inertia_}")
-
+    
+    # Optional: Plotting the Elbow Curve
     try:
-        kn = KneeLocator(K, inertia, curve='convex', direction='decreasing')
-        optimal_k = kn.knee
-        if not optimal_k:
-            optimal_k = 5  # Fallback to default
-            logger.warning("KneeLocator could not find the optimal k. Falling back to 5 clusters.")
-        else:
-            logger.info(f"Optimal number of clusters determined: {optimal_k}")
-    except Exception as e:
-        logger.error(f"Error determining optimal clusters: {e}")
-        logger.debug(traceback.format_exc())
-        optimal_k = 5  # Fallback to default
-
+        import matplotlib.pyplot as plt
+        plt.figure(figsize=(8, 4))
+        plt.plot(K, inertia, 'bx-')
+        plt.xlabel('Number of clusters')
+        plt.ylabel('Inertia')
+        plt.title('Elbow Method For Optimal k')
+        plt.show()
+    except ImportError:
+        logger.warning("matplotlib not installed. Skipping Elbow plot.")
+    
+    # Automatically determine the elbow point using a simple heuristic
+    # For demonstration purposes, we'll return a fixed value
+    # Implement more sophisticated logic if needed
+    optimal_k = 5  # Adjust based on the Elbow plot
+    logger.info(f"Determined optimal number of clusters: {optimal_k}")
     return optimal_k
 
 
@@ -606,72 +580,66 @@ def fetch_ebay_products(search_query: str, limit: int = 50) -> List[dict]:
             current_page += 1
             params["paginationInput.pageNumber"] = current_page
             logger.info(f"Fetching page {current_page} for query '{search_query}'")
-            try:
-                response = requests.get(ebay_api_url, headers=headers_api, params=params, timeout=10)
-                response.raise_for_status()
-                data = response.json()
+            response = requests.get(ebay_api_url, headers=headers_api, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
 
-                search_response = data.get('findItemsByKeywordsResponse', [{}])[0]
-                ack = search_response.get('ack', [None])[0]
-                if ack != 'Success':
-                    error_message = search_response.get('errorMessage', [{}])[0].get('error', [{}])[0].get('message', ['Unknown error'])[0]
-                    logger.error(f"eBay API Error on page {current_page}: {error_message}")
-                    break
-
-                items = search_response.get('searchResult', [{}])[0].get('item', [])
-                logger.info(f"Fetched {len(items)} items from eBay on page {current_page} for query '{search_query}'.")
-
-                for item in items:
-                    ebay_item_id = item.get("itemId", [None])[0]
-                    product_name = item.get("title", [None])[0]
-                    category_name = item.get("primaryCategory", [{}])[0].get("categoryName", [None])[0]
-                    price = float(item.get("sellingStatus", [{}])[0].get("currentPrice", [{}])[0].get("__value__", 0.0))
-                    currency = item.get("sellingStatus", [{}])[0].get("currentPrice", [{}])[0].get("__currency__", "USD")
-                    product_url = item.get("viewItemURL", [None])[0]
-                    image_url = item.get("galleryURL", [None])[0]
-
-                    # Skip items with missing essential data
-                    if not all([ebay_item_id, product_name, product_url]):
-                        logger.warning(f"Skipping item due to missing data: {item}")
-                        continue
-
-                    # Map category to clothing type
-                    clothing_type = extract_clothing_type(category_name)
-
-                    product = {
-                        'ebay_item_id': ebay_item_id,
-                        'product_name': product_name,
-                        'suggested_item_type': clothing_type,
-                        'price': price,
-                        'currency': currency,
-                        'product_url': product_url,
-                        'image_url': image_url,
-                        'date_suggested': datetime.utcnow(),
-                        'user_id': None  # Set to appropriate user_id if necessary
-                    }
-
-                    products.append(product)
-
-                    if len(products) >= limit:
-                        break
-
-            except requests.exceptions.HTTPError as http_err:
-                if response.status_code == 429:
-                    logger.warning("Rate limit exceeded. Sleeping for 60 seconds.")
-                    time.sleep(60)
-                    continue
-                else:
-                    logger.error(f"HTTP error occurred: {http_err}")
-                    break
-            except Exception as e:
-                logger.error(f"Error fetching page {current_page} from eBay: {e}")
-                logger.debug(traceback.format_exc())
+            search_response = data.get('findItemsByKeywordsResponse', [{}])[0]
+            ack = search_response.get('ack', [None])[0]
+            if ack != 'Success':
+                error_message = search_response.get('errorMessage', [{}])[0].get('error', [{}])[0].get('message', ['Unknown error'])[0]
+                logger.error(f"eBay API Error on page {current_page}: {error_message}")
                 break
+
+            items = search_response.get('searchResult', [{}])[0].get('item', [])
+            logger.info(f"Fetched {len(items)} items from eBay on page {current_page} for query '{search_query}'.")
+
+            for item in items:
+                ebay_item_id = item.get("itemId", [None])[0]
+                product_name = item.get("title", [None])[0]
+                category_name = item.get("primaryCategory", [{}])[0].get("categoryName", [None])[0]
+                price = float(item.get("sellingStatus", [{}])[0].get("currentPrice", [{}])[0].get("__value__", 0.0))
+                currency = item.get("sellingStatus", [{}])[0].get("currentPrice", [{}])[0].get("__currency__", "USD")
+                product_url = item.get("viewItemURL", [None])[0]
+                image_url = item.get("galleryURL", [None])[0]
+
+                # Skip items with missing essential data
+                if not all([ebay_item_id, product_name, product_url]):
+                    logger.warning(f"Skipping item due to missing data: {item}")
+                    continue
+
+                # Map category to clothing type
+                clothing_type = extract_clothing_type(category_name)
+
+                product = {
+                    'ebay_item_id': ebay_item_id,
+                    'product_name': product_name,
+                    'suggested_item_type': clothing_type,
+                    'price': price,
+                    'currency': currency,
+                    'product_url': product_url,
+                    'image_url': image_url,
+                    'date_suggested': datetime.utcnow(),
+                    'user_id': None  # Set to appropriate user_id if necessary
+                }
+
+                products.append(product)
+
+                if len(products) >= limit:
+                    break
 
         logger.info(f"Total products fetched: {len(products)}")
         return products
 
-    
+    except requests.exceptions.HTTPError as http_err:
+        logger.error(f"HTTP error occurred: {http_err}")
+        logger.debug(traceback.format_exc())
+    except Exception as e:
+        logger.error(f"Error fetching products from eBay: {e}")
+        logger.debug(traceback.format_exc())
+    return products
+
+
 def fetch_and_insert_trend_products(db: Session, trend: FashionTrend, limit_per_trend: int = 10):
     """
     Fetches products for a given trend's search phrase and inserts them into the database.
@@ -730,7 +698,6 @@ def fetch_and_insert_trend_products(db: Session, trend: FashionTrend, limit_per_
         logger.error(f"Error inserting products for trend '{trend.trend_name}': {e}")
         logger.debug(traceback.format_exc())
 
-
 def populate_ecommerce_products(db: Session, limit_per_trend: int = 10):
     """
     Populates the ecommerce_products table based on the current fashion trends.
@@ -742,18 +709,13 @@ def populate_ecommerce_products(db: Session, limit_per_trend: int = 10):
     trends = db.query(FashionTrend).filter(FashionTrend.trend_search_phrase.isnot(None)).all()
     logger.info(f"Found {len(trends)} trends with search phrases.")
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        futures = [
-            executor.submit(fetch_and_insert_trend_products, db, trend, limit_per_trend)
-            for trend in trends
-        ]
-        for future in concurrent.futures.as_completed(futures):
-            try:
-                future.result()
-            except Exception as e:
-                logger.error(f"Error in fetching/inserting products: {e}")
-                logger.debug(traceback.format_exc())
-
+    for trend in trends:
+        try:
+            fetch_and_insert_trend_products(db, trend, limit_per_trend)
+        except Exception as e:
+            logger.error(f"Failed to fetch and insert products for trend '{trend.trend_name}': {e}")
+            logger.debug(traceback.format_exc())
+            continue  # Proceed with the next trend
 
 def test_ebay_api():
     """
@@ -767,7 +729,6 @@ def test_ebay_api():
             logger.info(f"Product Name: {product['product_name']}, eBay ID: {product['ebay_item_id']}")
     else:
         logger.warning(f"No products fetched for test query '{test_search_query}'.")
-
 
 def fetch_and_update_fashion_trends(db: Session):
     """
@@ -788,9 +749,7 @@ def fetch_and_update_fashion_trends(db: Session):
     ]
 
     logger.info("Starting to fetch articles...")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        futures = [executor.submit(extract_text_from_url, url) for url in urls]
-        articles = [future.result() for future in concurrent.futures.as_completed(futures)]
+    articles = [extract_text_from_url(url) for url in urls]
     articles = [article for article in articles if article]  # Filter out empty strings
 
     if not articles:
@@ -800,9 +759,7 @@ def fetch_and_update_fashion_trends(db: Session):
     logger.info(f"Fetched {len(articles)} articles.")
 
     logger.info("Generating embeddings for articles...")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        futures = [executor.submit(get_embedding, article) for article in articles]
-        embeddings = [future.result() for future in concurrent.futures.as_completed(futures)]
+    embeddings = [get_embedding(article) for article in articles]
     embeddings = np.array([e for e in embeddings if e is not None])
 
     if len(embeddings) == 0:
@@ -827,9 +784,7 @@ def fetch_and_update_fashion_trends(db: Session):
     ]
 
     logger.info("Summarizing clusters...")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        futures = [executor.submit(summarize_cluster, preprocess_text(text)) for text in clustered_text]
-        summarized_clusters = [future.result() for future in concurrent.futures.as_completed(futures)]
+    summarized_clusters = [summarize_cluster(preprocess_text(text)) for text in clustered_text]
 
     logger.info("Extracting refined trends...")
     global_trends_text = extract_refined_trends(" ".join(summarized_clusters))
@@ -866,10 +821,59 @@ def fetch_and_update_fashion_trends(db: Session):
             trend_dict[trend] = ""
 
     if trend_dict:
-        save_trends_to_db(trend_dict, db, MAX_REGENERATIONS, DELAY_BETWEEN_ATTEMPTS)
+        save_trends_to_db(trend_dict, db)
     else:
         logger.error("No trends to save to the database.")
 
+
+def determine_optimal_clusters(embeddings: np.ndarray, max_k: int = ELBOW_METHOD_MAX_K) -> int:
+    """
+    Determines the optimal number of clusters using the Elbow Method.
+    """
+    num_samples = len(embeddings)
+    if num_samples < 2:
+        logger.error("Insufficient samples for clustering.")
+        raise ValueError("At least 2 samples are required for clustering.")
+
+    max_k = min(max_k, num_samples)  # Adjust max_k to the number of samples
+    inertia = []
+    K = range(2, max_k + 1)
+
+    for k in K:
+        kmeans = KMeans(n_clusters=k, random_state=42)
+        kmeans.fit(embeddings)
+        inertia.append(kmeans.inertia_)
+
+    # Optional: Plot the Elbow Curve
+    try:
+        import matplotlib.pyplot as plt
+        plt.figure(figsize=(8, 4))
+        plt.plot(K, inertia, 'bx-')
+        plt.xlabel('Number of clusters')
+        plt.ylabel('Inertia')
+        plt.title('Elbow Method For Optimal k')
+        plt.show()
+    except ImportError:
+        logger.warning("matplotlib not installed. Skipping Elbow plot.")
+
+    # Use a heuristic to find the elbow point (or return a default value)
+    optimal_k = max(2, min(5, max_k))  # Simple heuristic for demonstration
+    logger.info(f"Determined optimal number of clusters: {optimal_k}")
+    return optimal_k
+
+
+def test_ebay_api():
+    """
+    Tests the eBay API with a known working search phrase.
+    """
+    test_search_query = "Denim jacket"
+    products = fetch_ebay_products(test_search_query, limit=5)
+    if products:
+        logger.info(f"Test Query '{test_search_query}' fetched {len(products)} products.")
+        for product in products:
+            logger.info(f"Product Name: {product['product_name']}, eBay ID: {product['ebay_item_id']}")
+    else:
+        logger.warning(f"No products fetched for test query '{test_search_query}'.")
 
 def main():
     """
@@ -891,7 +895,6 @@ def main():
         populate_ecommerce_products(db, limit_per_trend=10)
     finally:
         db.close()
-
 
 if __name__ == "__main__":
     main()

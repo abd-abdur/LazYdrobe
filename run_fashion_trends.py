@@ -3,7 +3,7 @@
 import os
 from sqlalchemy.orm import Session
 from models import Base, FashionTrend, EcommerceProduct
-from fashion_trends import fetch_and_update_fashion_trends, populate_ecommerce_products, debug_ecommerce_product, test_ebay_api
+from fashion_trends import fetch_and_update_fashion_trends, populate_ecommerce_products, test_ebay_api
 from dotenv import load_dotenv
 import logging
 
