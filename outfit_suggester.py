@@ -145,11 +145,11 @@ def suggest_outfits(user_id: int, db: Session) -> OutfitSuggestion:
             logger.warning("No clothing items found matching the suitable clothing types.")
             raise ValueError("No suitable clothing items found.")
         
-        # 5. Shuffle Clothing Items to Ensure Randomization
-        random.shuffle(selected_items)
-        logger.debug("Shuffled clothing items for random selection.")
+        # 5. Shuffle Clothing Items to Ensure Randomization (Optional: Already handled in generate_outfit_combinations)
+        # random.shuffle(selected_items)
+        # logger.debug("Shuffled clothing items for random selection.")
         
-        # 6. Generate Outfit Combinations
+        # 6. Generate Outfit Combinations with Unique 'Top' Items
         outfit_combinations = generate_outfit_combinations(selected_items)
         if not outfit_combinations:
             raise ValueError("Insufficient clothing items across categories to form outfits. Please add more items to your wardrobe.")
@@ -204,6 +204,7 @@ def suggest_outfits(user_id: int, db: Session) -> OutfitSuggestion:
         logger.error(f"Unexpected error occurred while suggesting outfits for user {user_id}: {str(e)}")
         db.rollback()
         raise
+
 
 def determine_overall_outfit_gender(outfit_genders: List[str]) -> str:
     """
@@ -351,21 +352,22 @@ def map_product_to_category(suggested_item_type: str) -> Optional[str]:
     return None
 
 
-
-
-def generate_outfit_combinations(clothing_items: List[EcommerceProduct]) -> List[List[Dict[str, Any]]]:
+def generate_outfit_combinations(clothing_items: List[EcommerceProduct], max_outfits: int = 5) -> List[List[Dict[str, Any]]]:
     """
-    Generates possible outfit combinations by selecting one item from each general category.
-    
+    Generates possible outfit combinations by selecting one unique 'Top' from each outfit,
+    and randomly pairing it with a 'Bottom' and 'Shoes'.
+
     Args:
         clothing_items (List[EcommerceProduct]): List of relevant clothing items.
-        
+        max_outfits (int): Maximum number of outfits to generate.
+
     Returns:
         List[List[Dict[str, Any]]]: List of outfit combinations.
     """
-    categories = ['Top', 'Bottom', 'Shoes']  # General Categories
+    categories = ['Top', 'Bottom', 'Shoes']
     grouped_items = {category: [] for category in categories}
     
+    # Categorize items
     for item in clothing_items:
         category = map_product_to_category(item.suggested_item_type)
         if category:
@@ -384,36 +386,59 @@ def generate_outfit_combinations(clothing_items: List[EcommerceProduct]) -> List
         logger.warning(f"Missing items in categories: {missing}. Cannot form complete outfits.")
         return []
     
-    # Shuffle items within each category to ensure variety
-    for category in categories:
-        random.shuffle(grouped_items[category])
-        logger.debug(f"Shuffled items in category '{category}'")
+    # Shuffle 'Top' items to ensure variety
+    tops = grouped_items['Top']
+    bottoms = grouped_items['Bottom']
+    shoes = grouped_items['Shoes']
     
-    # Generate all possible combinations taking one item from each category
+    random.shuffle(tops)
+    random.shuffle(bottoms)
+    random.shuffle(shoes)
+    logger.debug("Shuffled items in all categories for randomness.")
+    
+    # Determine the number of outfits to generate
+    num_outfits = min(len(tops), max_outfits)
+    
     outfit_combinations = []
-    category_order = list(grouped_items.keys())
-    all_combinations = itertools.product(*[grouped_items[cat] for cat in category_order])
     
-    # Collect a limited number of unique outfit combinations
-    for combination in all_combinations:
-        outfit = []
-        for idx, item in enumerate(combination):
-            component = {
-                'clothing_type': category_order[idx],
-                'item_id': item.product_id,
-                'product_name': item.product_name,
-                'image_url': item.image_url,
+    for i in range(num_outfits):
+        top = tops[i]
+        bottom = random.choice(bottoms)
+        shoe = random.choice(shoes)
+        
+        outfit = [
+            {
+                'clothing_type': 'Top',
+                'item_id': top.product_id,
+                'product_name': top.product_name,
+                'image_url': top.image_url,
                 'eBay_link': None,
-                'gender': item.gender
+                'gender': top.gender
+            },
+            {
+                'clothing_type': 'Bottom',
+                'item_id': bottom.product_id,
+                'product_name': bottom.product_name,
+                'image_url': bottom.image_url,
+                'eBay_link': None,
+                'gender': bottom.gender
+            },
+            {
+                'clothing_type': 'Shoes',
+                'item_id': shoe.product_id,
+                'product_name': shoe.product_name,
+                'image_url': shoe.image_url,
+                'eBay_link': None,
+                'gender': shoe.gender
             }
-            outfit.append(component)
+        ]
+        
         outfit_combinations.append(outfit)
         logger.debug(f"Generated outfit combination: {[c['product_name'] for c in outfit]}")
-        if len(outfit_combinations) >= 5:
-            break  # Limit to 5 outfits for practicality
     
     logger.info(f"Generated {len(outfit_combinations)} outfit combinations.")
     return outfit_combinations
+
 
 
 
