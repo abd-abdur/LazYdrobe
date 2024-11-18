@@ -50,6 +50,7 @@ class EcommerceProduct(Base):
     image_url = Column(String(255), nullable=True)
     date_suggested = Column(DateTime, server_default=func.now())
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
+    gender = Column(String(10), nullable=False, default='Unisex')
 
     user = relationship("User", back_populates="ecommerce_products")
     wardrobe_items = relationship("WardrobeItem", back_populates="product")
@@ -122,6 +123,7 @@ class OutfitSuggestion(Base):
     suggestion_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     outfit_details = Column(JSON, nullable=False)  # Stores outfit components and eBay links
+    gender = Column(String(10), nullable=False, default='Unisex')
     date_suggested = Column(DateTime, server_default=func.now())
 
     user = relationship("User", back_populates="outfit_suggestions")
