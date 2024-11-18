@@ -795,10 +795,6 @@ def create_outfit(outfit: OutfitCreate, db: Session = Depends(get_db)):
 def get_all_outfits(user_id: int, db: Session = Depends(get_db)):
     logger.info(f"Fetching outfits for user ID: {user_id}")
     outfits = db.query(Outfit).filter(Outfit.user_id == user_id).all()
-
-    if not outfits:
-        raise HTTPException(status_code=404, detail="No outfits found for this user.")
-    
     return outfits
 
 ## Get Outfit Information
@@ -891,28 +887,45 @@ def suggest_outfit_endpoint(request: OutfitSuggestionRequest, db: Session = Depe
 
 from sqlalchemy.orm import joinedload
 
-@app.get("/outfits/suggestions/{user_id}", response_model=List[OutfitSuggestionResponse], status_code=status.HTTP_200_OK)
+@app.get("/outfits/suggestions/{user_id}", response_model=List[OutfitSuggestionResponse])
 def get_outfit_suggestions(user_id: int, db: Session = Depends(get_db)):
-    """
-    Retrieves all outfit suggestions for the specified user.
-    """
-    suggestions = db.query(OutfitSuggestion).options(joinedload(OutfitSuggestion.user)).filter(OutfitSuggestion.user_id == user_id).order_by(OutfitSuggestion.date_suggested.desc()).all()
+    logger.info(f"Fetching outfit suggestions for user ID: {user_id}")
+    suggestions = db.query(OutfitSuggestion).filter(OutfitSuggestion.user_id == user_id).all()
+    logger.debug(f"Number of outfit suggestions found: {len(suggestions)}")
+    
     if not suggestions:
+        logger.warning(f"No outfit suggestions found for user ID: {user_id}")
         raise HTTPException(status_code=404, detail="No outfit suggestions found for this user.")
+    
+    for suggestion in suggestions:
+        logger.debug(f"Suggestion ID: {suggestion.suggestion_id}, Date: {suggestion.date_suggested}, Gender: {suggestion.gender}")
+    
     return suggestions
 
+@app.delete("/outfits/suggestions/{suggestion_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_outfit_suggestion(suggestion_id: int, db: Session = Depends(get_db)):
+    """
+    Deletes an outfit suggestion by its ID.
+    """
+    logger.info(f"Attempting to delete outfit suggestion ID: {suggestion_id}")
+    
+    outfit_suggestion = db.query(OutfitSuggestion).filter(OutfitSuggestion.suggestion_id == suggestion_id).first()
+    
+    if not outfit_suggestion:
+        logger.warning(f"Outfit suggestion with ID {suggestion_id} not found.")
+        raise HTTPException(status_code=404, detail="Outfit suggestion not found.")
+    
+    try:
+        db.delete(outfit_suggestion)
+        db.commit()
+        logger.info(f"Outfit suggestion ID {suggestion_id} deleted successfully.")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to delete outfit suggestion ID {suggestion_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete outfit suggestion.")
+    
+    return
 
-# @app.post("/fashion_trends/test_update", status_code=status.HTTP_200_OK)
-# def test_update_fashion_trends(db: Session = Depends(get_db)):
-#     """
-#     Temporary endpoint to test fetching and updating fashion trends synchronously.
-#     """
-#     try:
-#         fetch_and_update_fashion_trends(db)
-#         return {"message": "Fashion trends update completed successfully."}
-#     except Exception as e:
-#         logger.error(f"Error during test fashion trends update: {e}")
-#         raise HTTPException(status_code=500, detail=f"Error during update: {str(e)}")
 
 
 ## Exception Handlers

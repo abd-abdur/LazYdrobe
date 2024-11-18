@@ -1,4 +1,5 @@
 # models.py
+from datetime import datetime
 
 from sqlalchemy import (
     Column,
@@ -120,10 +121,10 @@ class WeatherData(Base):
 class OutfitSuggestion(Base):
     __tablename__ = "outfit_suggestions"
 
-    suggestion_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
-    outfit_details = Column(JSON, nullable=False)  # Stores outfit components and eBay links
-    gender = Column(String(10), nullable=False, default='Unisex')
-    date_suggested = Column(DateTime, server_default=func.now())
+    suggestion_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
+    outfit_details = Column(JSON, nullable=False)  # Assuming JSON type for outfit_details
+    date_suggested = Column(DateTime, default=datetime.utcnow, nullable=False)
+    gender = Column(String, nullable=False)
 
     user = relationship("User", back_populates="outfit_suggestions")
