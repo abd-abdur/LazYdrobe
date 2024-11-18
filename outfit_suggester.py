@@ -241,14 +241,15 @@ def determine_clothing_types(weather: WeatherData, trends: List[FashionTrend]) -
     condition = weather.special_condition.lower()
     
     if temp_max > 75:
-        clothing_types.update(['Shorts', 'Tank Top', 'Sandals'])
+        clothing_types.update(['Shorts', 'Tank Top', 'Sandals', 'Sneakers', 'Shoe', 'Skirts', 'Blouse', 'Dress'])
     elif 60 < temp_max <= 75:
-        clothing_types.update(['Jeans', 'T-Shirt', 'Sneakers'])
+        clothing_types.update(['Jeans', 'T-Shirt', 'Sneakers', 'Shoe', 'Light Jacket', 'Blouse', 'Skirts', 'Dress', 'Leggings'])
     elif 45 < temp_max <= 60:
-        clothing_types.update(['Sweater', 'Jacket', 'Boots'])
+        clothing_types.update(['Sweater', 'Jacket', 'Boots', 'Sneakers', 'Shoe', 'Blazer', 'Pants', 'Jeans', 'Hoodie'])
     else:
-        clothing_types.update(['Coat', 'Hoodie', 'Heavy Boots'])
-    
+        clothing_types.update(['Coat', 'Hoodie', 'Insulated Boots', 'Shoe', 'Scarf', 'Sweater', 'Pants', 'Leggings', 'Blazer'])
+
+        
     # Incorporate fashion trends
     for trend in trends:
         trend_clothing = extract_clothing_types_from_trend(trend.trend_description)
