@@ -23,7 +23,8 @@ import spacy
 # Initialize SpaCy English model
 nlp = spacy.load("en_core_web_sm")
 
-from models import FashionTrend, EcommerceProduct  # Ensure EcommerceProduct is imported
+from models import FashionTrend, EcommerceProduct  
+from constants import ALLOWED_CATEGORIES
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,7 +33,7 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-DATABASE_URL = os.getenv('DATABASE_URL')  # Not directly used here, but kept for consistency
+DATABASE_URL = os.getenv('DATABASE_URL') 
 EBAY_APP_ID = os.getenv("EBAY_APP_ID")
 
 if not OPENAI_API_KEY:
@@ -64,6 +65,51 @@ def debug_ecommerce_product():
     """
     ecommerce_product = EcommerceProduct()
     print("EcommerceProduct Attributes:", ecommerce_product.__dict__)
+    
+def categorize_clothing_item_gpt(product_name: str) -> Optional[str]:
+    """
+    Categorizes a clothing item into one of the predefined categories using GPT-4.
+    
+    Args:
+        product_name (str): The name or description of the product.
+        
+    Returns:
+        Optional[str]: The categorized clothing type or None if categorization fails.
+    """
+    try:
+        logger.info(f"Categorizing product: '{product_name}' using GPT-4.")
+        prompt = (
+            "You are an expert fashion assistant. Categorize the following clothing item into one of the predefined categories.\n"
+            f"Predefined Categories: {', '.join(ALLOWED_CATEGORIES)}\n"
+            f"Item Description: {product_name}\n"
+            "Category:"
+        )
+        response = openai.ChatCompletion.create(
+            model="gpt-4",  # Correct model name
+            messages=[
+                {"role": "system", "content": "You are an expert fashion assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=10,
+            temperature=0.0,  # Ensure deterministic output
+        )
+        category = response.choices[0].message.content.strip()
+        # Validate the category
+        if category in ALLOWED_CATEGORIES:
+            logger.info(f"Categorized '{product_name}' as '{category}'.")
+            return category
+        else:
+            logger.warning(f"GPT-4 returned invalid category '{category}' for product '{product_name}'.")
+            return None
+    except openai.error.OpenAIError as e:
+        logger.error(f"OpenAI API error while categorizing product '{product_name}': {e}")
+        logger.debug(traceback.format_exc())
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error while categorizing product '{product_name}': {e}")
+        logger.debug(traceback.format_exc())
+        return None
+
 
 def determine_product_gender_gpt(product_name: str) -> str:
     """
@@ -106,28 +152,6 @@ def determine_product_gender_gpt(product_name: str) -> str:
         logger.debug(traceback.format_exc())
         return 'Unisex'  # Default to 'Unisex' in case of failure
     
-def extract_clothing_type(category_name: Optional[str]) -> str:
-    clothing_types = [
-        'T-Shirt', 'Tshirts', 'Jeans', 'Jackets', 'Dress', 'Dresses',
-        'Sweater', 'Sweaters', 'Coat', 'Coats', 'Hoodie', 'Hoodies',
-        'Tank Top', 'Tank Tops', 'Heavy Boots', 'Heavy Boot', 'Sneakers',
-        'Shoe', 'Sandals', 'Boots', 'Skirt', 'Skirts', 'Blouse',
-        'Blouses', 'Shorts', 'Leggings', 'Blazer', 'Blazers',
-        'Cardigan', 'Cardigans', 'Socks', 'Sock', 'Scarf', 'Scarves',
-        'Pants', 'Trouser', 'Trousers', 'Cargo Pants', 'Corduroy Pants'
-    ]
-    if not category_name:
-        return 'Other'
-
-    doc = nlp(category_name)
-    for token in doc:
-        lemma = token.lemma_.capitalize()
-        if lemma in clothing_types:
-            return lemma
-    return 'Other'
-
-
-
 def extract_text_from_url(url: str, retries: int = 3, delay: int = 2) -> str:
     """
     Fetches and extracts text content from a given URL.
@@ -573,7 +597,7 @@ def fetch_ebay_products(search_query: str, limit: int = 50, max_pages: int = 10)
                 continue
 
             # Map category to clothing type
-            clothing_type = extract_clothing_type(category_name)
+            clothing_type = categorize_clothing_item_gpt(category_name)
             gender = determine_product_gender_gpt(product_name)
 
             product = {
@@ -637,8 +661,7 @@ def fetch_ebay_products(search_query: str, limit: int = 50, max_pages: int = 10)
                     logger.warning(f"Skipping item due to missing data: {item}")
                     continue
 
-                # Map category to clothing type
-                clothing_type = extract_clothing_type(category_name)
+                gender = determine_product_gender_gpt(product_name)
 
                 product = {
                     'ebay_item_id': ebay_item_id,
@@ -649,7 +672,8 @@ def fetch_ebay_products(search_query: str, limit: int = 50, max_pages: int = 10)
                     'product_url': product_url,
                     'image_url': image_url,
                     'date_suggested': datetime.utcnow(),
-                    'user_id': None  # Set to appropriate user_id if necessary
+                    'user_id': None, # Set to appropriate user_id if necessary
+                    'gender': gender
                 }
 
                 products.append(product)

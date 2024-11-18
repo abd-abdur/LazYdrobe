@@ -870,7 +870,7 @@ def update_outfit(outfit_id: int, outfit_update: OutfitUpdate, db: Session = Dep
 # Outfit suggest
 
 @app.post("/outfits/suggest", response_model=OutfitSuggestionCreateResponse, status_code=status.HTTP_201_CREATED)
-def suggest_outfit(request: OutfitSuggestionRequest, db: Session = Depends(get_db)):
+def suggest_outfit_endpoint(request: OutfitSuggestionRequest, db: Session = Depends(get_db)):
     """
     Suggests outfits for the user based on current weather and fashion trends.
     Does not consider the user's existing wardrobe.
@@ -879,6 +879,7 @@ def suggest_outfit(request: OutfitSuggestionRequest, db: Session = Depends(get_d
     
     try:
         outfit_suggestion = suggest_outfits(request.user_id, db)
+        logger.info(f"Outfit suggestion ID {outfit_suggestion.suggestion_id} created for user_id={request.user_id}")
         return outfit_suggestion
     except ValueError as ve:
         logger.error(f"ValueError during outfit suggestion: {ve}")
@@ -899,6 +900,7 @@ def get_outfit_suggestions(user_id: int, db: Session = Depends(get_db)):
     if not suggestions:
         raise HTTPException(status_code=404, detail="No outfit suggestions found for this user.")
     return suggestions
+
 
 # @app.post("/fashion_trends/test_update", status_code=status.HTTP_200_OK)
 # def test_update_fashion_trends(db: Session = Depends(get_db)):

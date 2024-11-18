@@ -6,14 +6,69 @@ from sqlalchemy.orm import Session
 from models import FashionTrend, EcommerceProduct, OutfitSuggestion, WeatherData, User
 from fetch_ebay_data import fetch_similar_ebay_products
 import itertools
-import random  # Import random for shuffling
+import random 
 import openai
 import re
 import traceback 
+from typing import Optional
+import itertools
+from typing import List, Dict, Any
+import inflect
 
+p = inflect.engine()
+
+from constants import ALLOWED_CATEGORIES
 
 logger = logging.getLogger(__name__)
 
+
+def singularize(word: str) -> str:
+    return p.singular_noun(word) or word
+
+def categorize_clothing_item_gpt(product_name: str) -> Optional[str]:
+    """
+    Categorizes a clothing item into one of the predefined categories using GPT-4.
+    
+    Args:
+        product_name (str): The name or description of the product.
+        
+    Returns:
+        Optional[str]: The categorized clothing type or None if categorization fails.
+    """
+    try:
+        logger.info(f"Categorizing product: '{product_name}' using GPT-4.")
+        prompt = (
+            "You are an expert fashion assistant. Categorize the following clothing item into one of the predefined categories.\n"
+            f"Predefined Categories: {', '.join(ALLOWED_CATEGORIES)}\n"
+            f"Item Description: {product_name}\n"
+            "Category:"
+        )
+        response = openai.ChatCompletion.create(
+            model="gpt-4",  # Correct model name
+            messages=[
+                {"role": "system", "content": "You are an expert fashion assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=10,
+            temperature=0.0,  # Ensure deterministic output
+        )
+        category = response.choices[0].message.content.strip()
+        # Validate the category
+        if category in ALLOWED_CATEGORIES:
+            logger.info(f"Categorized '{product_name}' as '{category}'.")
+            return category
+        else:
+            logger.warning(f"GPT-4 returned invalid category '{category}' for product '{product_name}'.")
+            return None
+    except openai.error.OpenAIError as e:
+        logger.error(f"OpenAI API error while categorizing product '{product_name}': {e}")
+        logger.debug(traceback.format_exc())
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error while categorizing product '{product_name}': {e}")
+        logger.debug(traceback.format_exc())
+        return None
+    
 def determine_product_gender_gpt(product_name: str) -> str:
     """
     Determines the gender category using GPT-4 based on the product name.
@@ -96,6 +151,8 @@ def suggest_outfits(user_id: int, db: Session) -> OutfitSuggestion:
         
         # 6. Generate Outfit Combinations
         outfit_combinations = generate_outfit_combinations(selected_items)
+        if not outfit_combinations:
+            raise ValueError("Insufficient clothing items across categories to form outfits. Please add more items to your wardrobe.")
         logger.info(f"Generated {len(outfit_combinations)} outfit combinations.")
         
         # 7. Fetch Similar Products from eBay
@@ -207,6 +264,17 @@ def extract_clothing_types_from_trend(description: str) -> List[str]:
     return extracted
 
 def select_relevant_clothing_items(db: Session, clothing_types: List[str], user_id: int) -> List[EcommerceProduct]:
+    """
+    Selects relevant clothing items based on clothing types and user gender.
+    
+    Args:
+        db (Session): Database session.
+        clothing_types (List[str]): List of specific clothing types.
+        user_id (int): ID of the user.
+        
+    Returns:
+        List[EcommerceProduct]: List of relevant clothing items.
+    """
     # Retrieve user's gender
     user = db.query(User).filter(User.user_id == user_id).first()
     user_gender = user.gender.lower() if user.gender else 'unisex'
@@ -222,73 +290,133 @@ def select_relevant_clothing_items(db: Session, clothing_types: List[str], user_
     allowed_genders = gender_mapping.get(user_gender, ['Unisex'])
     logger.debug(f"Allowed genders for user {user_id}: {allowed_genders}")
 
-    # Format clothing types to include both singular and plural forms
-    clothing_types_formatted = []
-    for ctype in clothing_types:
-        ctype_cap = ctype.capitalize()
-        clothing_types_formatted.append(ctype_cap)
-        if not ctype_cap.endswith('s'):
-            clothing_types_formatted.append(ctype_cap + 's')
-    clothing_types_formatted = list(set(clothing_types_formatted))
+    # Format clothing types to lowercase to match the mapping function
+    clothing_types_formatted = [ctype.lower().strip() for ctype in clothing_types]
     logger.debug(f"Clothing types being searched: {clothing_types_formatted}")
 
-    # Query the database
+    # Query the database for products matching the specific categories and allowed genders
     products = db.query(EcommerceProduct).filter(
         EcommerceProduct.suggested_item_type.in_(clothing_types_formatted),
         EcommerceProduct.gender.in_(allowed_genders)
     ).all()
 
-    logger.debug(f"Found {len(products)} matching products for user {user_id}.")
+    logger.debug(f"Number of products fetched: {len(products)}")
+    for product in products:
+        logger.debug(f"Fetched product_id={product.product_id}, name='{product.product_name}', type='{product.suggested_item_type}', gender='{product.gender}'")
+
+    category_distribution = {}
+    for product in products:
+        category = map_product_to_category(product.suggested_item_type)
+        if category:
+            category_distribution[category] = category_distribution.get(category, 0) + 1
+            logger.debug(f"Product '{product.product_name}' categorized under '{category}'")
+        else:
+            logger.warning(f"Product '{product.product_name}' with type '{product.suggested_item_type}' could not be mapped to a general category.")
+
+    logger.info(f"Category distribution: {category_distribution}")
 
     return products
 
 
 
-def generate_outfit_combinations(clothing_items: List[EcommerceProduct]) -> List[List[Dict[str, Any]]]:
+def map_product_to_category(suggested_item_type: str) -> Optional[str]:
+    """
+    Maps a specific clothing item type to a general category.
+    
+    Args:
+        suggested_item_type (str): The specific type of clothing item.
+        
+    Returns:
+        Optional[str]: The general category ('Top', 'Bottom', 'Shoes') or None if no mapping is found.
+    """
+    # Singularize and lowercase the suggested_item_type to handle plural forms and case
+    singular_type = singularize(suggested_item_type).strip().lower()
+    suggested_item_type_lower = suggested_item_type.strip().lower()
+    
     categories = {
-        'Top': ['T-Shirt', 'Tank Top', 'Sweater', 'Jacket', 'Coat', 'Hoodie'],
-        'Bottom': ['Shorts', 'Jeans', 'Dress', 'Pants', 'Trousers'],
-        'Shoes': ['Sandals', 'Sneakers', 'Boots', 'Heavy Boots']
-    }
+    'Top': ['t-shirt', 'tank top', 'sweater', 'jacket', 'coat', 'hoodie', 'blazer', 'cardigan'],
+    'Bottom': ['shorts', 'jeans', 'jean', 'dress', 'pants', 'trouser', 'cargo pants', 'corduroy pants'],
+    'Shoes': ['sandals', 'sneakers', 'boots', 'heavy boot', 'shoe', 'boot']
+}
+
     
-    # Group items by category
+    for category, types in categories.items():
+        if singular_type in types:
+            logger.debug(f"Mapping '{suggested_item_type}' (singular: '{singular_type}') to '{category}'")
+            return category
+        elif suggested_item_type_lower in types:
+            logger.debug(f"Mapping '{suggested_item_type}' to '{category}'")
+            return category
+    logger.warning(f"No mapping found for '{suggested_item_type}' (singular: '{singular_type}')")
+    return None
+
+
+
+
+def generate_outfit_combinations(clothing_items: List[EcommerceProduct]) -> List[List[Dict[str, Any]]]:
+    """
+    Generates possible outfit combinations by selecting one item from each general category.
+    
+    Args:
+        clothing_items (List[EcommerceProduct]): List of relevant clothing items.
+        
+    Returns:
+        List[List[Dict[str, Any]]]: List of outfit combinations.
+    """
+    categories = ['Top', 'Bottom', 'Shoes']  # General Categories
     grouped_items = {category: [] for category in categories}
+    
     for item in clothing_items:
-        for category, types in categories.items():
-            if item.suggested_item_type in types:
-                grouped_items[category].append(item)
-                break  # Assume each item belongs to only one category
+        category = map_product_to_category(item.suggested_item_type)
+        if category:
+            grouped_items[category].append(item)
+            logger.debug(f"Assigned '{item.product_name}' to category '{category}'")
+        else:
+            logger.debug(f"Item '{item.product_name}' with type '{item.suggested_item_type}' could not be mapped to a general category.")
+
+    # Log the number of items in each category
+    for category, items in grouped_items.items():
+        logger.info(f"Category '{category}' has {len(items)} items.")
     
-    # Remove categories with no items
-    grouped_items = {k: v for k, v in grouped_items.items() if v}
-    
-    if not grouped_items:
-        logger.warning("No clothing items available to form outfits.")
+    # Check if all categories have at least one item
+    if any(len(items) == 0 for items in grouped_items.values()):
+        missing = [cat for cat, items in grouped_items.items() if len(items) == 0]
+        logger.warning(f"Missing items in categories: {missing}. Cannot form complete outfits.")
         return []
+    
+    # Shuffle items within each category to ensure variety
+    for category in categories:
+        random.shuffle(grouped_items[category])
+        logger.debug(f"Shuffled items in category '{category}'")
     
     # Generate all possible combinations taking one item from each category
     outfit_combinations = []
     category_order = list(grouped_items.keys())
     all_combinations = itertools.product(*[grouped_items[cat] for cat in category_order])
     
+    # Collect a limited number of unique outfit combinations
     for combination in all_combinations:
         outfit = []
         for idx, item in enumerate(combination):
             component = {
                 'clothing_type': category_order[idx],
-                'item_id': item.product_id,  # Correct field
+                'item_id': item.product_id,
                 'product_name': item.product_name,
                 'image_url': item.image_url,
-                'eBay_link': None  # To be filled later
+                'eBay_link': None,
+                'gender': item.gender
             }
             outfit.append(component)
         outfit_combinations.append(outfit)
+        logger.debug(f"Generated outfit combination: {[c['product_name'] for c in outfit]}")
         if len(outfit_combinations) >= 5:
             break  # Limit to 5 outfits for practicality
     
+    logger.info(f"Generated {len(outfit_combinations)} outfit combinations.")
     return outfit_combinations
 
-# outfit_suggester.py
+
+
 
 def fetch_similar_products_for_outfits(outfit_combinations: List[List[Dict[str, Any]]], db: Session) -> List[List[Dict[str, Any]]]:
     """
