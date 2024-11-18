@@ -132,8 +132,8 @@ def generate_outfit_combinations(clothing_items: List[EcommerceProduct]) -> List
     """
     # Define categories (e.g., Top, Bottom, Shoes)
     categories = {
-        'Top': ['T-Shirt', 'Tank Top', 'Sweater', 'Jacket', 'Coat', 'Hoodie'],
-        'Bottom': ['Shorts', 'Jeans', 'Dress'],
+        'Top': ['T-Shirt', 'Tank Top', 'Sweater', 'Jacket', 'Coat', 'Hoodie', 'Dress'],
+        'Bottom': ['Shorts', 'Jeans'],
         'Shoes': ['Sandals', 'Sneakers', 'Boots', 'Heavy Boots']
     }
     

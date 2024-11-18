@@ -11,10 +11,6 @@ psycopg2-binary
 passlib[bcrypt]
 python-dotenv
 pymysql
-<<<<<<< HEAD
-=======
-pydantic[email]
->>>>>>> 683a7c8462bc2b233b657969544153859d880718
 
 
 openai

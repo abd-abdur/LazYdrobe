@@ -77,8 +77,9 @@ class Outfit(Base):
     outfit_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     occasion = Column(JSON, nullable=True)
+    clothings = Column(JSON, nullable=False)
     for_weather = Column(String(255), nullable=True)
-    source_url = Column(String(255), nullable=True)
+    source_url = Column(String(511), nullable=True)
     date_suggested = Column(DateTime, server_default=func.now())
 
     user = relationship("User", back_populates="outfits")
