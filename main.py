@@ -789,6 +789,84 @@ def create_outfit(outfit: OutfitCreate, db: Session = Depends(get_db)):
         logger.error(f"Failed to create outfit: {e}")
         raise HTTPException(status_code=400, detail="Failed to create outfit")
 
+## Get Outfits for User
+
+@app.get("/outfits/user/{user_id}", response_model=List[OutfitResponse])
+def get_all_outfits(user_id: int, db: Session = Depends(get_db)):
+    logger.info(f"Fetching outfits for user ID: {user_id}")
+    outfits = db.query(Outfit).filter(Outfit.user_id == user_id).all()
+
+    if not outfits:
+        raise HTTPException(status_code=404, detail="No outfits found for this user.")
+    
+    return outfits
+
+## Get Outfit Information
+
+@app.get("/outfits/{outfit_id}", response_model=OutfitResponse)
+def read_outfit(outfit_id: int, db: Session = Depends(get_db)):
+    logger.info(f"Fetching outfit with ID: {outfit_id}")
+    outfit = db.query(Outfit).filter(Outfit.outfit_id == outfit_id).first()
+
+    if not outfit:
+        logger.warning(f"Outfit with ID {outfit_id} not found.")
+        raise HTTPException(status_code=404, detail="Outfit not found.")
+
+    logger.info(f"Outfit with ID {outfit_id} retrieved successfully.")
+    return outfit
+
+## Delete Outfits
+
+@app.delete("/outfits/{outfit_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_outfit(outfit_id: int, db: Session = Depends(get_db)):
+    logger.info(f"Deleting outfits with ID: {outfit_id}")
+
+    outfit = db.query(Outfit).filter(Outfit.outfit_id == outfit_id).first()
+    if not outfit:
+        logger.warning(f"Outfit with ID {outfit_id} not found.")
+        raise HTTPException(status_code=404, detail="Outfit not found.")
+
+    try:
+        db.delete(outfit)
+        db.commit()
+        logger.info(f"Outfit with ID {outfit_id} deleted successfully.")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to delete outfit with ID {outfit_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete outfit with ID {outfit_id}: {str(e)}")
+    return
+
+## Update Outfit Information
+
+@app.put("/outfits/{outfit_id}", response_model=OutfitResponse)
+def update_outfit(outfit_id: int, outfit_update: OutfitUpdate, db: Session = Depends(get_db)):
+    logger.info(f"Updating outfit with ID: {outfit_id}")
+    logger.info(f"Update data received: {outfit_update.dict()}")
+    logger.debug(f"Update data received: {outfit_update.dict()}")
+
+    outfit = db.query(Outfit).filter(Outfit.outfit_id == outfit_id).first()
+    if not outfit:
+        logger.warning(f"Outfit with ID {outfit_id} not found.")
+        raise HTTPException(status_code=404, detail="Outfit not found.")
+
+    # Update fields from the incoming request if they are provided
+    update_data = outfit_update.dict(exclude_unset=True)
+    logger.debug(f"Updating fields: {update_data}")
+    for key, value in update_data.items():
+        setattr(outfit, key, value)
+
+    try:
+        db.commit()
+        db.refresh(outfit)
+        logger.info(f"Outfit with ID {outfit_id} updated successfully.")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to update outfit: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update outfit: {str(e)}")
+
+    return outfit
+
+
 # Outfit suggest
 
 @app.post("/outfits/suggest", response_model=OutfitSuggestionCreateResponse, status_code=status.HTTP_201_CREATED)
