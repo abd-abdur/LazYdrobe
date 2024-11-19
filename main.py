@@ -175,8 +175,6 @@ class WardrobeItemUpdate(BaseModel):
 
     class Config:
         orm_mode = True
-
-
 class WardrobeItemResponse(WardrobeItemBase):
     item_id: int
     clothing_type: str
@@ -213,7 +211,8 @@ class OutfitUpdate(BaseModel):
     occasion: Optional[List[str]] = None
     for_weather: Optional[str] = None
 
-# Outfit Suggestion
+
+# Outfit Suggestion - it is working now
 
 class OutfitComponent(BaseModel):
     clothing_type: str
