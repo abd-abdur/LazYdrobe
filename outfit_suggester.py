@@ -261,7 +261,7 @@ def extract_clothing_types_from_trend(description: str) -> List[str]:
     """
     Extracts clothing types from a trend description using simple keyword matching.
     """
-    keywords = ['jacket', 'sweater', 'dress', 'jeans', 't-shirt', 'shorts', 'boots', 'sandals', 'sneakers', 'coat', 'hoodie', 'tank top', 'heavy boots']
+    keywords = ['jacket', 'blouse', 'skirt', 'sweater', 'dress', 'jeans', 't-shirt', 'shorts', 'boots', 'sandals', 'sneakers', 'coat', 'hoodie', 'tank top', 'heavy boots']
     extracted = [word.capitalize() for word in keywords if word in description.lower()]
     return extracted
 
@@ -336,8 +336,8 @@ def map_product_to_category(suggested_item_type: str) -> Optional[str]:
     suggested_item_type_lower = suggested_item_type.strip().lower()
     
     categories = {
-    'Top': ['t-shirt', 'tank top', 'sweater', 'jacket', 'coat', 'hoodie', 'blazer', 'cardigan'],
-    'Bottom': ['shorts', 'jeans', 'jean', 'dress', 'pants', 'trouser', 'cargo pants', 'corduroy pants'],
+    'Top': ['t-shirt', 'tank top', 'sweater', 'jacket', 'coat', 'hoodie', 'blazer', 'blouse', 'cardigan'],
+    'Bottom': ['shorts', 'jeans', 'jean', 'dress', 'skirt', 'pants', 'trouser', 'cargo pants', 'corduroy pants'],
     'Shoes': ['sandals', 'sneakers', 'boots', 'heavy boot', 'shoe', 'boot']
 }
 
