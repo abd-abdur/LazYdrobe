@@ -175,8 +175,6 @@ class WardrobeItemUpdate(BaseModel):
 
     class Config:
         orm_mode = True
-
-//making changes
 class WardrobeItemResponse(WardrobeItemBase):
     item_id: int
     clothing_type: str
