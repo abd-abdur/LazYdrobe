@@ -661,7 +661,7 @@ def update_wardrobe_item(item_id: int, item_update: WardrobeItemUpdate, db: Sess
 
 ## Delete Wardrobe Item
 
-@app.delete("/wardrobe_item", status_code=status.HTTP_204_NO_CONTENT)
+@app.delete("/wardrobe_item/", status_code=status.HTTP_204_NO_CONTENT)
 def delete_wardrobe_item(item_ids: List[int] = Body(..., embed=True), db: Session = Depends(get_db)):
     logger.info(f"Deleting wardrobe item with IDs: {item_ids}")
 
