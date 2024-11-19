@@ -614,19 +614,19 @@ def get_all_wardrobe_items(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No wardrobe items found for this user.")
     return items
 
-# ## Get Wardrobe Item Information
+## Get Wardrobe Item Information
 
-# @app.get("/wardrobe_item/{item_id}", response_model=WardrobeItemResponse)
-# def read_wardrobe_item(item_id: int, db: Session = Depends(get_db)):
-#     logger.info(f"Fetching wardrobe item with ID: {item_id}")
+@app.get("/wardrobe_item/{item_id}", response_model=WardrobeItemResponse)
+def read_wardrobe_item(item_id: int, db: Session = Depends(get_db)):
+    logger.info(f"Fetching wardrobe item with ID: {item_id}")
 
-#     wardrobe_item = db.query(WardrobeItem).filter(WardrobeItem.item_id == item_id).first()
-#     if not wardrobe_item:
-#         logger.warning(f"Wardrobe item with ID {item_id} not found.")
-#         raise HTTPException(status_code=404, detail="Wardrobe item not found.")
+    wardrobe_item = db.query(WardrobeItem).filter(WardrobeItem.item_id == item_id).first()
+    if not wardrobe_item:
+        logger.warning(f"Wardrobe item with ID {item_id} not found.")
+        raise HTTPException(status_code=404, detail="Wardrobe item not found.")
 
-#     logger.info(f"Wardrobe item with ID {item_id} retrieved successfully.")
-#     return wardrobe_item
+    logger.info(f"Wardrobe item with ID {item_id} retrieved successfully.")
+    return wardrobe_item
 
 
 ## Update Wardrobe Item Information
@@ -834,11 +834,9 @@ def delete_outfit(outfit_id: int, db: Session = Depends(get_db)):
 
 ## Update Outfit Information
 
-@app.put("/outfits/{outfit_id}", response_model=OutfitResponse)
+@app.put("/outfit/{outfit_id}", response_model=OutfitResponse)
 def update_outfit(outfit_id: int, outfit_update: OutfitUpdate, db: Session = Depends(get_db)):
     logger.info(f"Updating outfit with ID: {outfit_id}")
-    logger.info(f"Update data received: {outfit_update.dict()}")
-    logger.debug(f"Update data received: {outfit_update.dict()}")
 
     outfit = db.query(Outfit).filter(Outfit.outfit_id == outfit_id).first()
     if not outfit:

@@ -298,74 +298,7 @@ Launch the Postman application or access it through the web.
 ### Step 3: Add Requests
 Follow the structure below for each request:
 
-#### 1. Retrieve All Clothing Items
-- **Method**: `GET`
-- **Endpoint**: `http://127.0.0.1:8000/clothing_items/`
-- **Expected Output**: JSON array of clothing items.
-
-#### 2. Retrieve a Specific Clothing Item by ID
-- **Method**: `GET`
-- **Endpoint**: `http://127.0.0.1:8000/clothing_items/{item_id}`
-- **Expected Output**: JSON object of the clothing item.
-
-#### 3. Create a New Clothing Item
-- **Method**: `POST`
-- **Endpoint**: `http://127.0.0.1:8000/clothing_items/`
-- **JSON Input**:
-    ```json
-    { 
-      "user_id": 1,
-      "clothing_type": "T-shirt",
-      "for_weather": "All",
-      "color": {"Blue"},
-      "size": "L",
-      "tags": {"casual", "summer"},
-      "image_url": "http://example.com/tshirt.jpg"
-    }
-    ```
-- **Expected Output**: JSON object of the created clothing item.
-
-#### 4. Update an Existing Clothing Item
-- **Method**: `PUT`
-- **Endpoint**: `http://127.0.0.1:8000/clothing_items/{item_id}`
-- **JSON Input**:
-    ```json
-    {
-      "user_id": 1,
-      "clothing_type": "T-shirt",
-      "for_weather": "All",
-      "color": {"Light blue"},
-      "size": "M",
-      "tags": {"casual", "summer"},
-      "image_url": "http://example.com/tshirt.jpg"
-    }
-    ```
-- **Expected Output**: JSON object of the updated clothing item.
-
-
-#### 5. Delete a Clothing Item by ID
-- **Method**: `DELETE`
-- **Endpoint**: `http://127.0.0.1:8000/clothing_items/{item_id}`
-- **Expected Output**:
-    ```json
-    {
-      "message": "Item deleted successfully"
-    }
-    ```
-
-#### 6. Retrieve Weather Data
-- **Method**: `POST`
-- **Endpoint**: `http://127.0.0.1:8000/weather/`
-- **JSON Input**:
-    ```json
-    {
-      "location_part1": "New York",
-      "location_part2": "US"
-    }
-    ```
-- **Expected Output**: JSON object of weather forecast data.
-
-#### 7. Create a New User
+#### 1. Create a New User
 - **Method**: `POST`
 - **Endpoint**: `http://127.0.0.1:8000/users/`
 - **JSON Input**:
@@ -382,7 +315,7 @@ Follow the structure below for each request:
     ```
 - **Expected Output**: JSON object of the created user.
 
-#### 8. Login a User
+#### 2. Login a User
 - **Method**: `POST`
 - **Endpoint**: `http://127.0.0.1:8000/login/`
 - **JSON Input**:
@@ -401,7 +334,7 @@ Follow the structure below for each request:
     }
     ```
 
-#### 9. Retrieve User Information
+#### 3. Retrieve User Information
 - **Method**: `GET`
 - **Endpoint**: `http://127.0.0.1:8000/users/{user_id}`
 - **Input**: 
@@ -412,7 +345,23 @@ Follow the structure below for each request:
     ```
 - **Expected Output**: JSON object of the user.
 
-#### 10. Delete User
+#### 4. Update User Information
+- **Method**: PUT
+- **Endpoint**: PUT /users/{user_id}
+- **JSON Input**:
+    ```json
+    {
+      "username": "john_doe_updated",
+      "email": "johndoe2@example.com",
+      "password": "newsecurepassword",
+      "location": "Los Angeles, USA",
+      "preferences": {"fashion": ["casual", "sportswear"]},
+      "gender": "Other",
+    }
+    ```
+- **Expected Output**: JSON object of the updated user.
+
+#### 5. Delete User
 - **Method**: `DELETE`
 - **Endpoint**: `http://127.0.0.1:8000/users/{user_id}`
 - **Input**: 
@@ -427,6 +376,227 @@ Follow the structure below for each request:
       "message": "User with ID {user_id} deleted successfully."
     }
     ```
+
+#### 6. Create a Wardrobe Item
+- **Method**: `POST`
+- **Endpoint**: `http://127.0.0.1:8000/wardrobe_item/`
+- **JSON Input**:
+    ```json
+    {
+      "user_id": 1,
+      "clothing_type": "jacket",
+      "for_weather": ["cold", "rainy"],
+      "color": "black",
+      "size": "M",
+      "tags": ["formal", "winter"],
+      "image_url": "https://example.com/image.jpg"
+    }
+    ```
+- **Expected Output**: JSON object of the created wardrobe item.
+
+#### 7. Get Wardrobe Items for User
+- **Method**: `GET`
+- **Endpoint**: `http://127.0.0.1:8000/wardrobe_item/user/{user_id}`
+- **Input**:
+    - URL Path Parameter: `{user_id}` (e.g., `1`)
+- **Expected Output**: JSON list of wardrobe item objects with the same user_id.
+
+#### 8. Retrieve Wardrobe Item by ID
+- **Method**: `GET`
+- **Endpoint**: `http://127.0.0.1:8000/wardrobe_item/{item_id}`
+- **Input**:
+    - URL Path Parameter: `{item_id}` (e.g., `1`)
+- **Expected Output**: JSON object of the wardrobe item with {item_id}.
+
+#### 9. Update Wardrobe Item
+- **Method**: `PUT`
+- **Endpoint**: `http://127.0.0.1:8000/wardrobe_item/{item_id}`
+- **JSON Input**:
+    ```json
+    {
+      "clothing_type": "jacket",
+      "for_weather": ["cold", "rainy"],
+      "color": "navy blue",
+      "size": "M",
+      "tags": ["formal", "autumn"],
+      "image_url": "https://example.com/image.jpg"
+    }
+    ```
+- **Expected Output**: JSON object of the updated wardrobe item.
+
+#### 10. Delete Wardrobe Items
+- **Method**: `DELETE`
+- **Endpoint**: `http://127.0.0.1:8000/wardrobe_item/`
+- **JSON Input**:
+    ```json
+    {
+      "item_ids": [1, 2]
+    }
+    ```
+- **Expected Output**:
+    ```json
+    {
+      "message": "Wardrobe item with IDs {item_ids} deleted successfully."
+    }
+    ```
+
+#### 11. Get Weather Data
+- **Method**: `POST`
+- **Endpoint**: `http://127.0.0.1:8000/weather/`
+- **JSON Input**:
+    ```json
+    {
+      "user_id": 1
+    }
+    ```
+- **Expected Output**:
+    ```json
+    [
+      {
+        "date": "2024-11-11T00:00:00",
+        "feels_max": 67.8,
+        "feels_min": 55.1,
+        "humidity": 65.3,
+        "location": "new york,us",
+        "precipitation": 0.138,
+        "precipitation_probability": 100,
+        "special_condition": "Rain, Partially cloudy",
+        "temp_max": 67.8,
+        "temp_min": 55.1,
+        "weather_icon": "showers-day",
+        "wind_speed": 16.2
+      },
+      ...
+    ]
+    ```
+
+#### 12. Fetch and Update a Fashion Trend
+- **Method**: `POST`
+- **Endpoint**: `http://127.0.0.1:8000/fashion_trends/update`
+- **JSON Input**:
+    ```json
+    {
+        "trend_id": 227,
+        "title": "Denim on Denim",
+        "description": "This trend involves wearing different denim pieces together. It could be a denim jacket paired with jeans or a denim shirt with a denim skirt.",
+        "date_added": "2024-11-17T20:00:56",
+        "tags": ["denim jacket", "jeans", "denim shirt"]
+    }
+    ```
+- **Expected Output**: JSON object of fashion trend.
+
+#### 13. Retrieve Latest Fashion Trends
+- **Method**: `GET`
+- **Endpoint**: `http://127.0.0.1:8000/fashion_trends/`
+- **Expected Output**: JSON list of fashion trend objects.
+
+#### 14. Register a New Outfit
+- **Method**: `POST`
+- **Endpoint**: `http://127.0.0.1:8000/outfit/`
+- **JSON Input**:
+    ```json
+    {
+        "user_id": 8,
+        "occasion": ["casual"],
+        "for_weather": "All Year Around",
+        "clothings": [15, 16],
+        "date_created": "2024-11-17T23:28:13"
+    }
+    ```
+- **Expected Output**: JSON object of the created outfit.
+
+#### 15. Retrieve Outfits of a User
+- **Method**: `GET`
+- **Endpoint**: `http://127.0.0.1:8000/outfit/user/{user_id}`
+- **Input**:
+    - URL Path Parameter: `{user_id}` (e.g., `8`)
+- **Expected Output**: JSON list of outfit objects with the same user_id.
+
+#### 16. Update Outfit Information
+- **Method**: `PUT`
+- **Endpoint**: `http://127.0.0.1:8000/outfit/{outfit_id}`
+- **Input**:
+    - URL Path Parameter: `{item_id}` (e.g., `6`)
+- **JSON Input**:
+    ```json
+    {
+        "user_id": 8,
+        "occasion": ["casual", "formal"],
+        "for_weather": "Winter",
+        "clothings": [15, 16],
+        "date_updated": "2024-11-18T10:30:00"
+    }
+    ```
+- **Expected Output**: JSON object of the updated outfit.
+
+#### 17. Delete an Outfit
+- **Method**: `DELETE`
+- **Endpoint**: `http://127.0.0.1:8000/outfit/{outfit_id}`
+- **Input**:
+    - URL Path Parameter: `{item_id}` (e.g., `6`)
+- **Expected Output**:
+  ```json
+  {
+    "message": "Outfit with ID {outfit_id} deleted successfully."
+  }
+
+#### 18. Register a New Outfit Suggestion
+- **Method**: `POST`
+- **Endpoint**: `http://127.0.0.1:8000/outfits/suggest`
+- **JSON Input**:
+    ```json
+    {
+        "outfit_id": 6,
+        "suggestions": [
+            {
+                "gender": "Male",
+                "item_id": 1856,
+                "eBay_link": ["https://www.ebay.com/itm/John-Raphael-Millenium-Three-Piece-Check-Windowpane-Green-Suit-52L-Pants-42X32-/204184384429"],
+                "image_url": "https://i.ebayimg.com/thumbs/images/g/gV0AAOSw8UNjl951/s-l140.jpg"
+            }
+        ],
+        "category": "Unisex",
+        "date_added": "2024-11-18T15:39:45"
+    }
+    ```
+- **Expected Output**: JSON object of the suggested outfit.
+
+#### 19. Retrieve Outfit Suggestions of a User
+- **Method**: `GET`
+- **Endpoint**: `http://127.0.0.1:8000/outfits/suggestions/{user_id}`
+- **Input**:
+    - URL Path Parameter: `{user_id}` (e.g., `8`)
+- **Expected Output**:
+    ```json
+    [
+        {
+            "suggestion_id": 40,
+            "outfit_id": 6,
+            "suggestions": [
+                {
+                    "gender": "Male",
+                    "item_id": 1856,
+                    "eBay_link": ["https://www.ebay.com/itm/John-Raphael-Millenium-Three-Piece-Check-Windowpane-Green-Suit-52L-Pants-42X32-/204184384429"],
+                    "image_url": "https://i.ebayimg.com/thumbs/images/g/gV0AAOSw8UNjl951/s-l140.jpg"
+                }
+            ],
+            "category": "Unisex",
+            "date_added": "2024-11-18T15:39:45"
+        }
+    ]
+    ```
+
+#### 20. Delete an Outfit Suggestion
+- **Method**: `DELETE`
+- **Endpoint**: `http://127.0.0.1:8000/outfits/suggestions/{suggestion_id}`
+- **Input**:
+    - URL Path Parameter: `{suggestion_id}` (e.g., `40`)
+- **Expected Output**:
+  ```json
+  {
+    "message": "Outfit suggestion with ID {suggestion_id} deleted successfully."
+  }
+
 
 For reference, you can find all the API tests in the [Postman_Tests.txt](Postman_Tests.txt) file. This file contains descriptions of each API endpoint including method types, expected inputs, and outputs.
 
