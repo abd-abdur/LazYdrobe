@@ -606,7 +606,7 @@ def create_wardrobe_item(item: WardrobeItemCreate, db: Session = Depends(get_db)
 
 ## Get Wardrobe Items for User
 
-@app.get("/wardrobe_items/user/{user_id}", response_model=List[WardrobeItemResponse])
+@app.get("/wardrobe_item/user/{user_id}", response_model=List[WardrobeItemResponse])
 def get_all_wardrobe_items(user_id: int, db: Session = Depends(get_db)):
     logger.info(f"Fetching wardrobe item for user ID: {user_id}")
     items = db.query(WardrobeItem).filter(WardrobeItem.user_id == user_id).all()
@@ -614,24 +614,24 @@ def get_all_wardrobe_items(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No wardrobe items found for this user.")
     return items
 
-## Get Wardrobe Item Information
+# ## Get Wardrobe Item Information
 
-@app.get("/wardrobe_items/{item_id}", response_model=WardrobeItemResponse)
-def read_wardrobe_item(item_id: int, db: Session = Depends(get_db)):
-    logger.info(f"Fetching wardrobe item with ID: {item_id}")
+# @app.get("/wardrobe_item/{item_id}", response_model=WardrobeItemResponse)
+# def read_wardrobe_item(item_id: int, db: Session = Depends(get_db)):
+#     logger.info(f"Fetching wardrobe item with ID: {item_id}")
 
-    wardrobe_item = db.query(WardrobeItem).filter(WardrobeItem.item_id == item_id).first()
-    if not wardrobe_item:
-        logger.warning(f"Wardrobe item with ID {item_id} not found.")
-        raise HTTPException(status_code=404, detail="Wardrobe item not found.")
+#     wardrobe_item = db.query(WardrobeItem).filter(WardrobeItem.item_id == item_id).first()
+#     if not wardrobe_item:
+#         logger.warning(f"Wardrobe item with ID {item_id} not found.")
+#         raise HTTPException(status_code=404, detail="Wardrobe item not found.")
 
-    logger.info(f"Wardrobe item with ID {item_id} retrieved successfully.")
-    return wardrobe_item
+#     logger.info(f"Wardrobe item with ID {item_id} retrieved successfully.")
+#     return wardrobe_item
 
 
 ## Update Wardrobe Item Information
 
-@app.put("/wardrobe_items/{item_id}", response_model=WardrobeItemResponse)
+@app.put("/wardrobe_item/{item_id}", response_model=WardrobeItemResponse)
 def update_wardrobe_item(item_id: int, item_update: WardrobeItemUpdate, db: Session = Depends(get_db)):
     logger.info(f"Updating wardrobe item with ID: {item_id}")
     logger.debug(f"Update data received: {item_update.dict()}")
@@ -661,7 +661,7 @@ def update_wardrobe_item(item_id: int, item_update: WardrobeItemUpdate, db: Sess
 
 ## Delete Wardrobe Item
 
-@app.delete("/wardrobe_items", status_code=status.HTTP_204_NO_CONTENT)
+@app.delete("/wardrobe_item", status_code=status.HTTP_204_NO_CONTENT)
 def delete_wardrobe_item(item_ids: List[int] = Body(..., embed=True), db: Session = Depends(get_db)):
     logger.info(f"Deleting wardrobe item with IDs: {item_ids}")
 
@@ -791,7 +791,7 @@ def create_outfit(outfit: OutfitCreate, db: Session = Depends(get_db)):
 
 ## Get Outfits for User
 
-@app.get("/outfits/user/{user_id}", response_model=List[OutfitResponse])
+@app.get("/outfit/user/{user_id}", response_model=List[OutfitResponse])
 def get_all_outfits(user_id: int, db: Session = Depends(get_db)):
     logger.info(f"Fetching outfits for user ID: {user_id}")
     outfits = db.query(Outfit).filter(Outfit.user_id == user_id).all()
@@ -799,7 +799,7 @@ def get_all_outfits(user_id: int, db: Session = Depends(get_db)):
 
 ## Get Outfit Information
 
-@app.get("/outfits/{outfit_id}", response_model=OutfitResponse)
+@app.get("/outfit/{outfit_id}", response_model=OutfitResponse)
 def read_outfit(outfit_id: int, db: Session = Depends(get_db)):
     logger.info(f"Fetching outfit with ID: {outfit_id}")
     outfit = db.query(Outfit).filter(Outfit.outfit_id == outfit_id).first()
@@ -813,9 +813,9 @@ def read_outfit(outfit_id: int, db: Session = Depends(get_db)):
 
 ## Delete Outfits
 
-@app.delete("/outfits/{outfit_id}", status_code=status.HTTP_204_NO_CONTENT)
+@app.delete("/outfit/{outfit_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_outfit(outfit_id: int, db: Session = Depends(get_db)):
-    logger.info(f"Deleting outfits with ID: {outfit_id}")
+    logger.info(f"Deleting outfit with ID: {outfit_id}")
 
     outfit = db.query(Outfit).filter(Outfit.outfit_id == outfit_id).first()
     if not outfit:

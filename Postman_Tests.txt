@@ -281,3 +281,174 @@ Postman Tests for API Endpoints
     "weather_icon": "showers-day",
     "wind_speed": 16.2
 ],}
+
+12. Fetch and Update a Fashion Trend
+- **Endpoint**: POST /fashion_trends/update
+- **Method**: POST
+- **JSON Input**:
+{
+    "trend_id": 227,
+    "title": "Denim on Denim",
+    "description": "This trend involves wearing different denim pieces together. It could be a denim jacket paired with jeans or a denim shirt with a denim skirt.",
+    "date_added": "2024-11-17T20:00:56",
+    "tags": ["denim jacket", "jeans", "denim shirt"]
+}
+- **Output**:
+{
+    "trend_id": 227,
+    "title": "Denim on Denim",
+    "description": "Updated successfully",
+    "tags": ["denim jacket", "jeans", "denim shirt"],
+    "date_updated": "2024-11-17T20:30:00"
+}
+
+13. Retrieve Fashion Trends
+- **Endpoint**: GET /fashion_trends/
+- **Method**: GET
+- **Output**:
+[
+    {
+        "trend_id": 227,
+        "title": "Denim on Denim",
+        "description": "This trend involves wearing different denim pieces together. It could be a denim jacket paired with jeans or a denim shirt with a denim skirt.",
+        "tags": ["denim jacket", "jeans", "denim shirt"],
+        "date_added": "2024-11-17T20:00:56"
+    }
+]
+
+### Custom Outfit Management
+
+14. Register a New Outfit
+- **Endpoint**: POST /outfit/
+- **Method**: POST
+- **JSON Input**:
+{
+    "user_id": 8,
+    "occasion": ["casual"],
+    "for_weather": "All Year Around",
+    "clothings": [15, 16],
+    "date_created": "2024-11-17T23:28:13"
+}
+- **Output**:
+{
+    "outfit_id": 6,
+    "user_id": 8,
+    "occasion": ["casual"],
+    "for_weather": "All Year Around",
+    "clothings": [15, 16],
+    "date_created": "2024-11-17T23:28:13"
+}
+
+15. Retrieve Outfits of a User
+- **Endpoint**: GET /outfit/user/{user_id}
+- **Method**: GET
+- **URL Parameters**:
+  - user_id: Replace {user_id} with the ID of the user (e.g., 8).
+- **Output**:
+[
+    {
+        "outfit_id": 6,
+        "user_id": 8,
+        "occasion": ["casual"],
+        "for_weather": "All Year Around",
+        "clothings": [15, 16],
+        "date_created": "2024-11-17T23:28:13"
+    }
+]
+
+16. Update Outfit Information
+- **Endpoint**: PUT /outfit/{item_id}
+- **Method**: PUT
+- **URL Parameters**:
+  - item_id: Replace {item_id} with the outfit ID (e.g., 6).
+- **JSON Input**:
+{
+    "user_id": 8,
+    "occasion": ["casual", "formal"],
+    "for_weather": "Winter",
+    "clothings": [15, 16],
+    "date_updated": "2024-11-18T10:30:00"
+}
+- **Output**:
+{
+    "outfit_id": 6,
+    "user_id": 8,
+    "occasion": ["casual", "formal"],
+    "for_weather": "Winter",
+    "clothings": [15, 16],
+    "date_updated": "2024-11-18T10:30:00"
+}
+
+17. Delete an Outfit
+- **Endpoint**: DELETE /outfit/{item_id}
+- **Method**: DELETE
+- **URL Parameters**:
+  - item_id: Replace {item_id} with the ID of the outfit you want to delete (e.g., 6).
+- **Output**: 
+204 No Content
+
+### Outfit Suggestion Management
+
+18. Register a New Outfit Suggestion
+- **Endpoint**: POST /outfits/suggest
+- **Method**: POST
+- **JSON Input**:
+{
+    "outfit_id": 6,
+    "suggestions": [
+        {
+            "gender": "Male",
+            "item_id": 1856,
+            "eBay_link": ["https://www.ebay.com/itm/John-Raphael-Millenium-Three-Piece-Check-Windowpane-Green-Suit-52L-Pants-42X32-/204184384429"],
+            "image_url": "https://i.ebayimg.com/thumbs/images/g/gV0AAOSw8UNjl951/s-l140.jpg"
+        }
+    ],
+    "category": "Unisex",
+    "date_added": "2024-11-18T15:39:45"
+}
+- **Output**:
+{
+    "suggestion_id": 40,
+    "outfit_id": 6,
+    "suggestions": [
+        {
+            "gender": "Male",
+            "item_id": 1856,
+            "eBay_link": ["https://www.ebay.com/itm/John-Raphael-Millenium-Three-Piece-Check-Windowpane-Green-Suit-52L-Pants-42X32-/204184384429"],
+            "image_url": "https://i.ebayimg.com/thumbs/images/g/gV0AAOSw8UNjl951/s-l140.jpg"
+        }
+    ],
+    "category": "Unisex",
+    "date_added": "2024-11-18T15:39:45"
+}
+
+19. Retrieve Outfit Suggestions of a User
+- **Endpoint**: GET /outfits/suggestions/{user_id}
+- **Method**: GET
+- **URL Parameters**:
+  - user_id: Replace {user_id} with the ID of the user (e.g., 8).
+- **Output**:
+[
+    {
+        "suggestion_id": 40,
+        "outfit_id": 6,
+        "suggestions": [
+            {
+                "gender": "Male",
+                "item_id": 1856,
+                "eBay_link": ["https://www.ebay.com/itm/John-Raphael-Millenium-Three-Piece-Check-Windowpane-Green-Suit-52L-Pants-42X32-/204184384429"],
+                "image_url": "https://i.ebayimg.com/thumbs/images/g/gV0AAOSw8UNjl951/s-l140.jpg"
+            }
+        ],
+        "category": "Unisex",
+        "date_added": "2024-11-18T15:39:45"
+    }
+]
+
+20. Delete an Outfit Suggestion
+- **Endpoint**: DELETE /outfits/suggestions/{suggestion_id}
+- **Method**: DELETE
+- **URL Parameters**:
+  - suggestion_id: Replace {suggestion_id} with the ID of the suggestion to delete (e.g., 40).
+- **Output**: 
+204 No Content
