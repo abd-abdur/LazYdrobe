@@ -69,31 +69,38 @@ def debug_ecommerce_product():
 def categorize_clothing_item_gpt(product_name: str) -> Optional[str]:
     """
     Categorizes a clothing item into one of the predefined categories using GPT-4.
-    
+
     Args:
         product_name (str): The name or description of the product.
-        
+
     Returns:
         Optional[str]: The categorized clothing type or None if categorization fails.
     """
     try:
         logger.info(f"Categorizing product: '{product_name}' using GPT-4.")
         prompt = (
-            "You are an expert fashion assistant. Categorize the following clothing item into one of the predefined categories.\n"
+            "You are an expert fashion assistant. "
+            "Categorize the following clothing item into one of the predefined categories.\n"
             f"Predefined Categories: {', '.join(ALLOWED_CATEGORIES)}\n"
             f"Item Description: {product_name}\n"
-            "Category:"
+            "Category (choose one from the list):"
         )
         response = openai.ChatCompletion.create(
-            model="gpt-4",  # Correct model name
+            model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are an expert fashion assistant."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=10,
             temperature=0.0,  # Ensure deterministic output
+            n=1,
+            stop=["\n"]  # Stop at newline to prevent extra text
         )
         category = response.choices[0].message.content.strip()
+        
+        # Clean the category text
+        category = category.split('\n')[0].strip()
+        
         # Validate the category
         if category in ALLOWED_CATEGORIES:
             logger.info(f"Categorized '{product_name}' as '{category}'.")
@@ -109,6 +116,17 @@ def categorize_clothing_item_gpt(product_name: str) -> Optional[str]:
         logger.error(f"Unexpected error while categorizing product '{product_name}': {e}")
         logger.debug(traceback.format_exc())
         return None
+
+
+from functools import lru_cache
+
+@lru_cache(maxsize=1024)
+def categorize_clothing_item_gpt_cached(product_name: str) -> Optional[str]:
+    return categorize_clothing_item_gpt(product_name)
+
+@lru_cache(maxsize=1024)
+def determine_product_gender_gpt_cached(product_name: str) -> str:
+    return determine_product_gender_gpt(product_name)
 
 
 def determine_product_gender_gpt(product_name: str) -> str:
@@ -272,9 +290,11 @@ def extract_refined_trends(text: str, max_tokens: int = MAX_SUMMARY_TOKENS) -> s
     logger.debug(f"Combined trends text length: {len(combined_trends)} characters.")
     return combined_trends
 
+from sklearn.cluster import DBSCAN
+
 def deduplicate_trends(trends_list: List[str]) -> List[str]:
     """
-    Deduplicates trends based on cosine similarity of their TF-IDF vectors.
+    Deduplicates trends using DBSCAN clustering based on TF-IDF embeddings.
     
     Args:
         trends_list (List[str]): List of trend descriptions.
@@ -284,55 +304,59 @@ def deduplicate_trends(trends_list: List[str]) -> List[str]:
     """
     vectorizer = TfidfVectorizer(stop_words='english')
     X = vectorizer.fit_transform(trends_list)
-    similarity_matrix = cosine_similarity(X)
+    
+    # Use cosine distance for DBSCAN
+    dbscan = DBSCAN(metric='cosine', eps=1 - SIMILARITY_THRESHOLD, min_samples=1)
+    labels = dbscan.fit_predict(X)
+    
     unique_trends = []
-    threshold = SIMILARITY_THRESHOLD
-    added = set()
-
-    for i in range(len(trends_list)):
-        if i not in added:
-            similar_indices = np.where(similarity_matrix[i] > threshold)[0]
-            merged_trend = " ".join([trends_list[j] for j in similar_indices if j not in added])
-            unique_trends.append(merged_trend)
-            added.update(similar_indices)
-            logger.debug(f"Merged trends at indices {similar_indices} into a unique trend.")
-
+    for label in set(labels):
+        cluster_indices = np.where(labels == label)[0]
+        # Choose the trend with the highest TF-IDF sum in the cluster
+        cluster_embeddings = X[cluster_indices]
+        tfidf_sums = cluster_embeddings.sum(axis=1)
+        best_index = cluster_indices[np.argmax(tfidf_sums)]
+        unique_trends.append(trends_list[best_index])
+        logger.debug(f"Merged cluster {label} into trend: {trends_list[best_index]}")
+    
     logger.info(f"Deduplicated trends count: {len(unique_trends)}.")
     return unique_trends
+
 
 def generate_search_keywords(description: str, min_keywords: int = 3, max_keywords: int = 5) -> Optional[str]:
     """
     Extracts key fashion keywords from the trend description using OpenAI's ChatCompletion.
     Ensures that the generated keywords do not contain any punctuation and are suitable for eBay search queries.
-    
+
     Args:
         description (str): The trend description text.
         min_keywords (int): Minimum number of keywords to extract.
         max_keywords (int): Maximum number of keywords to extract.
-        
+
     Returns:
         Optional[str]: A space-separated string of extracted keywords or None if failed.
     """
     try:
         logger.info("Generating search keywords using GPT.")
+        prompt = (
+            "You are an expert in fashion trend analysis. "
+            f"Extract {min_keywords} to {max_keywords} highly relevant and specific keywords or short phrases "
+            "from the following trend description. Ensure that the keywords are suitable for eBay product searches, "
+            "do not contain any punctuation, and are distinct from one another.\n\n"
+            f"Trend Description: {description}\n\n"
+            "Keywords:"
+        )
+        
         response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an expert in fashion trend analysis. "
-                        "Extract the most relevant keywords or short phrases from the following trend description. "
-                        "Ensure that the keywords are suitable for eBay product searches and do not contain any punctuation."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": f"Extract {min_keywords} to {max_keywords} key fashion keywords from this trend description without any punctuation: {description}"
-                }
+                {"role": "system", "content": "You are an expert in fashion trend analysis."},
+                {"role": "user", "content": prompt}
             ],
             max_tokens=60,
-            temperature=0.5
+            temperature=0.5,
+            n=1,
+            stop=["\n"]
         )
         
         # Extract and clean the response
@@ -352,7 +376,7 @@ def generate_search_keywords(description: str, min_keywords: int = 3, max_keywor
         keyword_list = keywords.split()
         if len(keyword_list) < min_keywords:
             logger.warning(f"Generated keywords have less than {min_keywords} words. Attempting to regenerate.")
-            # Optionally, implement regeneration logic here
+            return generate_search_keywords(description, min_keywords, max_keywords)
         elif len(keyword_list) > max_keywords:
             keyword_list = keyword_list[:max_keywords]
             keywords = ' '.join(keyword_list)
@@ -365,16 +389,21 @@ def generate_search_keywords(description: str, min_keywords: int = 3, max_keywor
         return None
 
 
+
+from sqlalchemy import insert
+from sqlalchemy.dialects.mysql import insert as mysql_insert
+
 def save_trends_to_db(trend_dict: dict, db: Session, max_regenerations: int = 2):
     """
     Saves a dictionary of trends to the database, generating and validating search phrases.
-    
+
     Args:
         trend_dict (dict): A dictionary where keys are trend names and values are trend descriptions.
         db (Session): SQLAlchemy session object.
         max_regenerations (int): Maximum number of times to attempt regeneration if validation fails.
     """
     try:
+        trends_to_insert = []
         for trend_name, trend_description in trend_dict.items():
             # Truncate trend_name if it's too long
             if len(trend_name) > 255:
@@ -385,7 +414,7 @@ def save_trends_to_db(trend_dict: dict, db: Session, max_regenerations: int = 2)
             regeneration_attempts = 0
             search_keywords = None
             
-            while regeneration_attempts <= max_regenerations:
+            while regeneration_attempts < max_regenerations:
                 # Generate search keywords using GPT
                 search_keywords = generate_search_keywords(trend_description)
                 if not search_keywords:
@@ -405,27 +434,32 @@ def save_trends_to_db(trend_dict: dict, db: Session, max_regenerations: int = 2)
                 logger.warning(f"Could not generate a valid search phrase for trend '{trend_name}' after {max_regenerations} attempts. Skipping.")
                 continue  # Move to the next trend
             
-            # Check if the trend already exists to avoid duplicates
-            existing_trend = db.query(FashionTrend).filter(
-                FashionTrend.trend_name == trend_name,
-                FashionTrend.trend_search_phrase == search_keywords
-            ).first()
-            if existing_trend:
-                logger.info(f"Trend '{trend_name}' with search phrase '{search_keywords}' already exists. Skipping insertion.")
-                continue
-            
-            # Insert the validated trend into the database
-            trend = FashionTrend(
-                trend_name=trend_name,
-                trend_description=trend_description,
-                trend_search_phrase=search_keywords,
-                date_added=datetime.utcnow()
-            )
-            db.add(trend)
-            logger.info(f"Inserted trend '{trend_name}' with search phrase '{search_keywords}' into the database.")
+            # Prepare the new trend for insertion
+            trends_to_insert.append({
+                'trend_name': trend_name,
+                'trend_description': trend_description,
+                'trend_search_phrase': search_keywords,
+                'date_added': datetime.utcnow()
+            })
+            logger.debug(f"Prepared trend '{trend_name}' for insertion.")
         
-        db.commit()
-        logger.info("Trends successfully inserted into the database.")
+        if trends_to_insert:
+            # Create a MySQL-specific insert statement
+            stmt = mysql_insert(FashionTrend).values(trends_to_insert)
+            
+            # Define the update behavior on duplicate key
+            on_duplicate_key_stmt = stmt.on_duplicate_key_update(
+                trend_description=stmt.inserted.trend_description,
+                trend_search_phrase=stmt.inserted.trend_search_phrase,
+                date_added=stmt.inserted.date_added
+            )
+            
+            # Execute the statement
+            db.execute(on_duplicate_key_stmt)
+            db.commit()
+            logger.info(f"Inserted/Updated {len(trends_to_insert)} trends into the database.")
+        else:
+            logger.info("No new trends to insert into the database.")
     except Exception as e:
         db.rollback()
         logger.error(f"Failed to insert trends into the database: {e}")
@@ -435,7 +469,7 @@ def save_trends_to_db(trend_dict: dict, db: Session, max_regenerations: int = 2)
 
 def preprocess_text(text: str, max_words: int = 1000) -> str:
     """
-    Preprocesses text by truncating it to a maximum number of words.
+    Preprocesses text by removing unwanted characters and truncating to a maximum number of words.
     
     Args:
         text (str): The text to preprocess.
@@ -444,10 +478,24 @@ def preprocess_text(text: str, max_words: int = 1000) -> str:
     Returns:
         str: Preprocessed text.
     """
+    # Remove URLs
+    text = re.sub(r'http\S+', '', text)
+    
+    # Remove special characters and numbers
+    text = re.sub(r'[^A-Za-z\s]', '', text)
+    
+    # Convert to lowercase
+    text = text.lower()
+    
+    # Remove extra whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+    
+    # Truncate to max_words
     words = text.split()
     preprocessed = " ".join(words[:max_words])
     logger.debug(f"Preprocessed text to {len(preprocessed)} characters.")
     return preprocessed
+
 
 def summarize_cluster(text: str) -> str:
     """
@@ -597,8 +645,8 @@ def fetch_ebay_products(search_query: str, limit: int = 50, max_pages: int = 10)
                 continue
 
             # Map category to clothing type
-            clothing_type = categorize_clothing_item_gpt(category_name)
-            gender = determine_product_gender_gpt(product_name)
+            clothing_type = categorize_clothing_item_gpt_cached(category_name)
+            gender = determine_product_gender_gpt_cached(product_name)
 
             product = {
                 'ebay_item_id': ebay_item_id,
@@ -692,6 +740,14 @@ def fetch_ebay_products(search_query: str, limit: int = 50, max_pages: int = 10)
         logger.debug(traceback.format_exc())
     return products
 
+from cachetools import cached, TTLCache
+
+# Define a cache with a TTL of 1 hour and maxsize of 1000
+ebay_cache = TTLCache(maxsize=1000, ttl=3600)
+
+@cached(cache=ebay_cache)
+def fetch_ebay_products_cached(search_query: str, limit: int = 50, max_pages: int = 10) -> List[dict]:
+    return fetch_ebay_products(search_query, limit, max_pages)
 
 def fetch_and_insert_trend_products(db: Session, trend: FashionTrend, limit_per_trend: int = 10):
     """
@@ -709,16 +765,15 @@ def fetch_and_insert_trend_products(db: Session, trend: FashionTrend, limit_per_
         return
 
     logger.info(f"Fetching products for trend '{trend.trend_name}' with search phrase '{search_phrase}'.")
-    
+
     # Fetch products from eBay with a maximum of 10 pages
-    products = fetch_ebay_products(search_phrase, limit=limit_per_trend, max_pages=10)
-    
+    products = fetch_ebay_products_cached(search_phrase, limit=limit_per_trend, max_pages=10)
+
     logger.info(f"Fetched {len(products)} products for trend '{trend.trend_name}'.")
 
-    # Insert products into the database
-    inserted_count = 0
+    # Prepare products for bulk insert
+    new_products = []
     for product in products:
-        # Check for duplicates based on ebay_item_id
         existing_product = db.query(EcommerceProduct).filter(
             EcommerceProduct.ebay_item_id == product['ebay_item_id']
         ).first()
@@ -726,33 +781,32 @@ def fetch_and_insert_trend_products(db: Session, trend: FashionTrend, limit_per_
             logger.info(f"Product '{product['product_name']}' (eBay ID: {product['ebay_item_id']}) already exists. Skipping.")
             continue
 
-        try:
-            new_product = EcommerceProduct(
-                ebay_item_id=product['ebay_item_id'],
-                product_name=product['product_name'],
-                suggested_item_type=product['suggested_item_type'],
-                price=product['price'],
-                currency=product['currency'],
-                product_url=product['product_url'],
-                image_url=product['image_url'],
-                date_suggested=product['date_suggested'],
-                user_id=product['user_id'],
-                gender=product['gender'] 
-            )
-            db.add(new_product)
-            inserted_count += 1
-        except Exception as e:
-            logger.error(f"Error creating EcommerceProduct instance: {e}")
-            logger.debug(traceback.format_exc())
-            continue
+        new_product = EcommerceProduct(
+            ebay_item_id=product['ebay_item_id'],
+            product_name=product['product_name'],
+            suggested_item_type=product['suggested_item_type'],
+            price=product['price'],
+            currency=product['currency'],
+            product_url=product['product_url'],
+            image_url=product['image_url'],
+            date_suggested=product['date_suggested'],
+            user_id=product['user_id'],
+            gender=product['gender']
+        )
+        new_products.append(new_product)
 
-    try:
-        db.commit()
-        logger.info(f"Inserted {inserted_count} new products for trend '{trend.trend_name}'.")
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error inserting products for trend '{trend.trend_name}': {e}")
-        logger.debug(traceback.format_exc())
+    if new_products:
+        try:
+            db.bulk_save_objects(new_products)
+            db.commit()
+            logger.info(f"Inserted {len(new_products)} new products for trend '{trend.trend_name}'.")
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error bulk inserting products for trend '{trend.trend_name}': {e}")
+            logger.debug(traceback.format_exc())
+    else:
+        logger.info(f"No new products to insert for trend '{trend.trend_name}'.")
+
 
 
 def populate_ecommerce_products(db: Session, limit_per_trend: int = 10):
@@ -773,6 +827,14 @@ def populate_ecommerce_products(db: Session, limit_per_trend: int = 10):
             logger.error(f"Failed to fetch and insert products for trend '{trend.trend_name}': {e}")
             logger.debug(traceback.format_exc())
             continue  # Proceed with the next trend
+        
+from cachetools import cached, TTLCache
+
+summary_cache = TTLCache(maxsize=1000, ttl=86400)  # Cache summaries for 1 day
+
+@cached(cache=summary_cache)
+def summarize_cluster_cached(text: str) -> str:
+    return summarize_cluster(text)
 
 def fetch_and_update_fashion_trends(db: Session):
     """
@@ -828,7 +890,7 @@ def fetch_and_update_fashion_trends(db: Session):
     ]
 
     logger.info("Summarizing clusters...")
-    summarized_clusters = [summarize_cluster(preprocess_text(text)) for text in clustered_text]
+    summarized_clusters = [summarize_cluster_cached(preprocess_text(text)) for text in clustered_text]
 
     logger.info("Extracting refined trends...")
     global_trends_text = extract_refined_trends(" ".join(summarized_clusters))
@@ -869,10 +931,16 @@ def fetch_and_update_fashion_trends(db: Session):
     else:
         logger.error("No trends to save to the database.")
 
+import cProfile
+import pstats
+
 def main():
     """
     Main function to execute the fashion trends fetching and product population.
     """
+    profiler = cProfile.Profile()
+    profiler.enable()
+    
     # Initialize database session (assuming SQLAlchemy sessionmaker is set up)
     engine = create_engine(DATABASE_URL, pool_size=20, max_overflow=10, pool_timeout=30, pool_recycle=1800)
     SessionFactory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -887,6 +955,8 @@ def main():
         populate_ecommerce_products(db, limit_per_trend=10)
     finally:
         db.remove()  # Use remove() with scoped_session to properly handle sessions
+    
+    profiler.disable()
+    stats = pstats.Stats(profiler).sort_stats('cumtime')
+    stats.print_stats(20)  # Print top 20 functions by cumulative time
 
-if __name__ == "__main__":
-    main()

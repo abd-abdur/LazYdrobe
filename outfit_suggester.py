@@ -119,25 +119,38 @@ def suggest_outfits(user_id: int, db: Session) -> OutfitSuggestion:
     logger.info(f"Starting outfit suggestion for user_id={user_id}")
     
     try:
-        # 1. Retrieve Current Weather
+        # 1. Retrieve User Profile
+        user = db.query(User).filter(User.user_id == user_id).first()
+        if not user:
+            logger.warning(f"User with ID {user_id} not found.")
+            raise ValueError("User not found.")
+        
+        if not user.location:
+            logger.warning(f"User with ID {user_id} does not have a location set.")
+            raise ValueError("User location not set.")
+        
+        location = user.location
+        logger.info(f"User location: {location}")
+        
+        # 2. Retrieve Current Weather
         weather = get_latest_weather(db, user_id)
         if not weather:
             logger.warning(f"No weather data available for user ID {user_id}.")
             raise ValueError("Weather data not available.")
         logger.info(f"Retrieved weather data: {weather.special_condition}, Temp Max: {weather.temp_max}°F")
         
-        # 2. Retrieve Current Fashion Trends
+        # 3. Retrieve Current Fashion Trends
         trends = get_current_fashion_trends(db)
         if not trends:
             logger.warning("No fashion trends available.")
             raise ValueError("Fashion trends not available.")
         logger.info(f"Retrieved {len(trends)} fashion trends.")
         
-        # 3. Determine Suitable Clothing Types
+        # 4. Determine Suitable Clothing Types
         suitable_clothing_types = determine_clothing_types(weather, trends)
         logger.info(f"Determined suitable clothing types: {suitable_clothing_types}")
         
-        # 4. Select Relevant Clothing Items from Ecommerce Products
+        # 5. Select Relevant Clothing Items from Ecommerce Products
         selected_items = select_relevant_clothing_items(db, suitable_clothing_types, user_id)
         logger.info(f"Selected {len(selected_items)} clothing items for outfit suggestions.")
         
@@ -145,15 +158,11 @@ def suggest_outfits(user_id: int, db: Session) -> OutfitSuggestion:
             logger.warning("No clothing items found matching the suitable clothing types.")
             raise ValueError("No suitable clothing items found.")
         
-        # 5. Shuffle Clothing Items to Ensure Randomization (Optional: Already handled in generate_outfit_combinations)
-        # random.shuffle(selected_items)
-        # logger.debug("Shuffled clothing items for random selection.")
-        
-        # 6. Generate Outfit Combinations with Unique 'Top' Items
-        outfit_combinations = generate_outfit_combinations(selected_items)
+        # 6. Generate Outfit Combinations
+        outfit_combinations = generate_outfit_combinations(selected_items, max_outfits=1)  # Set to 1
         if not outfit_combinations:
             raise ValueError("Insufficient clothing items across categories to form outfits. Please add more items to your wardrobe.")
-        logger.info(f"Generated {len(outfit_combinations)} outfit combinations.")
+        logger.info(f"Generated {len(outfit_combinations)} outfit combination(s).")
         
         # 7. Fetch Similar Products from eBay
         enriched_outfits = fetch_similar_products_for_outfits(outfit_combinations, db)
@@ -206,6 +215,8 @@ def suggest_outfits(user_id: int, db: Session) -> OutfitSuggestion:
         raise
 
 
+
+
 def determine_overall_outfit_gender(outfit_genders: List[str]) -> str:
     """
     Determines the overall gender of the outfit based on individual component genders.
@@ -220,9 +231,32 @@ def determine_overall_outfit_gender(outfit_genders: List[str]) -> str:
 
 def get_latest_weather(db: Session, user_id: int) -> WeatherData:
     """
-    Retrieves the latest weather data for the user from the database.
+    Retrieves the latest weather data for the user's location.
+    
+    Args:
+        db (Session): Database session.
+        user_id (int): ID of the user.
+        
+    Returns:
+        WeatherData: The latest weather data or None if not found.
     """
-    return db.query(WeatherData).filter(WeatherData.user_id == user_id).order_by(WeatherData.date.desc()).first()
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user or not user.location:
+        logger.debug("User or user location not found.")
+        return None
+    
+    weather = db.query(WeatherData).filter(
+        WeatherData.user_id == user_id,
+        WeatherData.location == user.location
+    ).order_by(WeatherData.date.desc()).first()
+    
+    if weather:
+        logger.debug(f"Fetched WeatherData: date={weather.date}, temp_max={weather.temp_max}, location={weather.location}")
+    else:
+        logger.debug("No WeatherData found for the user.")
+    return weather
+
+
 
 def get_current_fashion_trends(db: Session) -> List[FashionTrend]:
     """
@@ -233,29 +267,66 @@ def get_current_fashion_trends(db: Session) -> List[FashionTrend]:
 def determine_clothing_types(weather: WeatherData, trends: List[FashionTrend]) -> List[str]:
     """
     Determines suitable clothing types based on weather conditions and fashion trends.
+    Includes considerations for various weather conditions and accessories.
+    
+    Args:
+        weather (WeatherData): Current weather data.
+        trends (List[FashionTrend]): Current fashion trends.
+        
+    Returns:
+        List[str]: List of suitable clothing types.
     """
     clothing_types = set()
     
     # Analyze weather conditions
     temp_max = weather.temp_max
     condition = weather.special_condition.lower()
-    
-    if temp_max > 75:
-        clothing_types.update(['Shorts', 'Tank Top', 'Sandals', 'Sneakers', 'Shoe', 'Skirts', 'Blouse', 'Dress'])
-    elif 60 < temp_max <= 75:
-        clothing_types.update(['Jeans', 'T-Shirt', 'Sneakers', 'Shoe', 'Light Jacket', 'Blouse', 'Skirts', 'Dress', 'Leggings'])
-    elif 45 < temp_max <= 60:
-        clothing_types.update(['Sweater', 'Jacket', 'Boots', 'Sneakers', 'Shoe', 'Blazer', 'Pants', 'Jeans', 'Hoodie'])
-    else:
-        clothing_types.update(['Coat', 'Hoodie', 'Insulated Boots', 'Shoe', 'Scarf', 'Sweater', 'Pants', 'Leggings', 'Blazer'])
 
-        
+    # Rainy Weather
+    if any(word in condition for word in ['rain', 'drizzle', 'shower', 'storm', 'wet']):
+        clothing_types.update(['Raincoat', 'Umbrella', 'Waterproof Boots', 'Rain Hat', 'Poncho', 'Scarf'])
+
+    # Sunny Weather
+    if any(word in condition for word in ['sunny', 'clear', 'partly cloudy', 'hot']):
+        clothing_types.update(['Sunglasses', 'Wide-Brim Hat', 'Cap'])
+
+    # Snowy Weather
+    if 'snow' in condition or 'sleet' in condition:
+        clothing_types.update(['Snow Boots', 'Winter Coat', 'Thermal Gloves', 'Beanie', 'Scarves', 'Thermal Pants'])
+
+    # Cold Weather (<= 45°F)
+    if temp_max <= 45:
+        clothing_types.update(['Heavy Coat', 'Thermal Wear', 'Gloves', 'Beanie', 'Insulated Boots', 'Scarf', 'Turtleneck'])
+
+    # Warm Weather (> 75°F)
+    if temp_max > 75:
+        clothing_types.update(['Shorts', 'Tank Top', 'Sandals', 'Sneakers', 'Skirts', 'Blouse', 'Dress', 'Camisole', 'Crop Top'])
+
+    # Mild Weather (60°F to 75°F)
+    if 60 < temp_max <= 75:
+        clothing_types.update(['Jeans', 'T-Shirt', 'Sneakers', 'Light Jacket', 'Blouse', 'Skirts', 'Dress', 'Leggings', 'Capri Pants'])
+
+    # Cool Weather (45°F to 60°F)
+    if 45 < temp_max <= 60:
+        clothing_types.update(['Sweater', 'Jacket', 'Boots', 'Sneakers', 'Blazer', 'Pants', 'Jeans', 'Hoodie', 'Cardigan'])
+
+    # Special Weather Conditions
+    if 'windy' in condition:
+        clothing_types.update(['Windbreaker', 'Hooded Jacket', 'Scarf'])
+    if 'humid' in condition:
+        clothing_types.update(['Breathable Fabrics', 'Linen Shirt', 'Shorts', 'Sandals'])
+    if 'fog' in condition:
+        clothing_types.update(['Reflective Jacket', 'Layers', 'Scarf'])
+
     # Incorporate fashion trends
     for trend in trends:
         trend_clothing = extract_clothing_types_from_trend(trend.trend_description)
         clothing_types.update(trend_clothing)
-    
-    return list(clothing_types)
+
+    # Ensure proper list output
+    return sorted(list(clothing_types))
+
+
 
 def extract_clothing_types_from_trend(description: str) -> List[str]:
     """
@@ -324,49 +395,61 @@ def select_relevant_clothing_items(db: Session, clothing_types: List[str], user_
 def map_product_to_category(suggested_item_type: str) -> Optional[str]:
     """
     Maps a specific clothing item type to a general category.
-    
-    Args:
-        suggested_item_type (str): The specific type of clothing item.
-        
-    Returns:
-        Optional[str]: The general category ('Top', 'Bottom', 'Shoes') or None if no mapping is found.
     """
-    # Singularize and lowercase the suggested_item_type to handle plural forms and case
     singular_type = singularize(suggested_item_type).strip().lower()
     suggested_item_type_lower = suggested_item_type.strip().lower()
     
     categories = {
-    'Top': ['t-shirt', 'tank top', 'sweater', 'jacket', 'coat', 'hoodie', 'blazer', 'blouse', 'cardigan'],
-    'Bottom': ['shorts', 'jeans', 'jean', 'dress', 'skirt', 'pants', 'trouser', 'cargo pants', 'corduroy pants'],
-    'Shoes': ['sandals', 'sneakers', 'boots', 'heavy boot', 'shoe', 'boot']
-}
-
+        'Top': [
+            't-shirt', 'tank top', 'blouse', 'sweater', 'hoodie', 'cardigan',
+            'shirt', 'crop top', 'camisole', 'polo shirt', 'long sleeve shirt',
+            'turtleneck'
+        ],
+        'Bottom': [
+            'jeans', 'shorts', 'skirt', 'pants', 'trouser', 'cargo pants',
+            'corduroy pants', 'leggings', 'capri pants', 'sweatpants',
+            'jumpsuit', 'culottes'
+        ],
+        'Shoes': [
+            'sneakers', 'sandals', 'boots', 'heavy boot', 'shoe',
+            'loafers', 'flats', 'slippers', 'heels', 'mules'
+        ],
+        'Outerwear': [
+            'jacket', 'coat', 'blazer', 'raincoat', 'windbreaker',
+            'denim jacket', 'leather jacket', 'trench coat'
+        ],
+        'Accessories': [
+            'scarf', 'umbrella', 'hat', 'gloves', 'sunglasses', 'watch', 'earrings', 'necklace', 'bracelet',
+            'poncho', 'thermal wear', 'tights', 'swimwear',
+             
+        ]
+    }
     
-    for category, types in categories.items():
-        if singular_type in types:
-            logger.debug(f"Mapping '{suggested_item_type}' (singular: '{singular_type}') to '{category}'")
+    for category, items in categories.items():
+        if singular_type in items or suggested_item_type_lower in items:
             return category
-        elif suggested_item_type_lower in types:
-            logger.debug(f"Mapping '{suggested_item_type}' to '{category}'")
-            return category
-    logger.warning(f"No mapping found for '{suggested_item_type}' (singular: '{singular_type}')")
     return None
 
 
-def generate_outfit_combinations(clothing_items: List[EcommerceProduct], max_outfits: int = 5) -> List[List[Dict[str, Any]]]:
+
+def generate_outfit_combinations(
+    clothing_items: List[EcommerceProduct],
+    max_outfits: int = 1  # Set to 1 as per your requirement
+) -> List[List[Dict[str, Any]]]:
     """
     Generates possible outfit combinations by selecting one unique 'Top' from each outfit,
-    and randomly pairing it with a 'Bottom' and 'Shoes'.
-
+    and randomly pairing it with a 'Bottom' and 'Shoes'. 'Outerwear' and 'Accessories' are optional.
+    
     Args:
         clothing_items (List[EcommerceProduct]): List of relevant clothing items.
         max_outfits (int): Maximum number of outfits to generate.
-
+    
     Returns:
         List[List[Dict[str, Any]]]: List of outfit combinations.
     """
-    categories = ['Top', 'Bottom', 'Shoes']
-    grouped_items = {category: [] for category in categories}
+    required_categories = ['Top', 'Bottom', 'Shoes']
+    optional_categories = ['Outerwear', 'Accessories']
+    grouped_items = {category: [] for category in required_categories + optional_categories}
     
     # Categorize items
     for item in clothing_items:
@@ -376,36 +459,32 @@ def generate_outfit_combinations(clothing_items: List[EcommerceProduct], max_out
             logger.debug(f"Assigned '{item.product_name}' to category '{category}'")
         else:
             logger.debug(f"Item '{item.product_name}' with type '{item.suggested_item_type}' could not be mapped to a general category.")
-
+    
     # Log the number of items in each category
     for category, items in grouped_items.items():
         logger.info(f"Category '{category}' has {len(items)} items.")
     
-    # Check if all categories have at least one item
-    if any(len(items) == 0 for items in grouped_items.values()):
-        missing = [cat for cat, items in grouped_items.items() if len(items) == 0]
-        logger.warning(f"Missing items in categories: {missing}. Cannot form complete outfits.")
-        return []
+    # Check if all required categories have at least one item
+    missing_required = [cat for cat in required_categories if len(grouped_items[cat]) == 0]
+    if missing_required:
+        logger.warning(f"Missing items in required categories: {missing_required}. Cannot form complete outfits.")
+        raise ValueError(f"Insufficient clothing items in categories: {', '.join(missing_required)}. Please add more items to your wardrobe.")
     
-    # Shuffle 'Top' items to ensure variety
-    tops = grouped_items['Top']
-    bottoms = grouped_items['Bottom']
-    shoes = grouped_items['Shoes']
+    # Optional categories can be empty; no need to raise an error
     
-    random.shuffle(tops)
-    random.shuffle(bottoms)
-    random.shuffle(shoes)
-    logger.debug("Shuffled items in all categories for randomness.")
+    # Shuffle required categories for randomness
+    for category in required_categories:
+        random.shuffle(grouped_items[category])
     
     # Determine the number of outfits to generate
-    num_outfits = min(len(tops), max_outfits)
+    num_outfits = min(len(grouped_items['Top']), max_outfits)
     
     outfit_combinations = []
     
     for i in range(num_outfits):
-        top = tops[i]
-        bottom = random.choice(bottoms)
-        shoe = random.choice(shoes)
+        top = grouped_items['Top'][i]
+        bottom = random.choice(grouped_items['Bottom'])
+        shoe = random.choice(grouped_items['Shoes'])
         
         outfit = [
             {
@@ -434,13 +513,35 @@ def generate_outfit_combinations(clothing_items: List[EcommerceProduct], max_out
             }
         ]
         
+        # Optionally add 'Outerwear' if available
+        if grouped_items['Outerwear']:
+            outer = random.choice(grouped_items['Outerwear'])
+            outfit.append({
+                'clothing_type': 'Outerwear',
+                'item_id': outer.product_id,
+                'product_name': outer.product_name,
+                'image_url': outer.image_url,
+                'eBay_link': None,
+                'gender': outer.gender
+            })
+        
+        # Optionally add 'Accessories' if available
+        if grouped_items['Accessories']:
+            accessory = random.choice(grouped_items['Accessories'])
+            outfit.append({
+                'clothing_type': 'Accessories',
+                'item_id': accessory.product_id,
+                'product_name': accessory.product_name,
+                'image_url': accessory.image_url,
+                'eBay_link': None,
+                'gender': accessory.gender
+            })
+        
         outfit_combinations.append(outfit)
         logger.debug(f"Generated outfit combination: {[c['product_name'] for c in outfit]}")
     
-    logger.info(f"Generated {len(outfit_combinations)} outfit combinations.")
+    logger.info(f"Generated {len(outfit_combinations)} outfit combination(s).")
     return outfit_combinations
-
-
 
 
 

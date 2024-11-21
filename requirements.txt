@@ -13,7 +13,9 @@ passlib[bcrypt]
 python-dotenv
 pymysql
 inflect
+aiohttp 
 
+asyncio
 
 openai
 scikit-learn

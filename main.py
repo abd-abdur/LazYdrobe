@@ -279,23 +279,22 @@ def get_api_key(key_name: str) -> str:
                             detail=f"{key_name} not found in environment variables.")
     return api_key
 
-def fetch_weather_data_from_db(location:str) -> List[dict]:
-    """
-    Try to fetch 5 days of weather data in location from database
-    Returns all five or []
-    """    
+def fetch_weather_data_from_db(location: str) -> List[dict]:
     today = datetime.utcnow().date()
     db = SessionLocal()
 
     weather_data = []
-    logger.info(f"Fetching data from database")
+    logger.info(f"Fetching data from database for location: {location}")
 
     try:
-        for i in range(4):
-            date = today + timedelta(days=i)
+        for i in range(5):  # Fetch 5 days as per comment
+            target_date = today + timedelta(days=i)
             entry = (
                 db.query(WeatherData)
-                .filter(WeatherData.location == location, WeatherData.date == date)
+                .filter(
+                    WeatherData.location == location,
+                    WeatherData.date == target_date  # Assuming 'date' is of DATE type
+                )
                 .first()
             )
             if entry:
@@ -313,35 +312,30 @@ def fetch_weather_data_from_db(location:str) -> List[dict]:
                     'special_condition': entry.special_condition,
                     'weather_icon': entry.weather_icon,
                 })
-                logger.info(f"Obtained weather data for {date}")
+                logger.info(f"Obtained weather data for {target_date}")
             else:
-                break;
+                logger.info(f"No weather data found for {target_date}")
+                break  # Exit early if data for a day is missing
     except Exception as e:
         logger.error(f"Error fetching data from database: {e}")
         return []
     finally:
         db.close()
-    
-    logger.info(weather_data)
-    if len(weather_data) == 4:
-        return weather_data  
+
+    logger.debug(f"Weather data retrieved: {weather_data}")
+    if len(weather_data) == 5:
+        return weather_data
     return []
 
+
 def fetch_weather_data(api_key: str, location: str) -> List[dict]:
-    """
-    Try to get weather data from DB,
-    Fetch weather data from Visual Crossing API.
-    """
+    weather_entries = fetch_weather_data_from_db(location)
 
-    weather_entries=fetch_weather_data_from_db(location)
-
-    if (weather_entries):
+    if weather_entries:
         return weather_entries
 
-    # URL-encode the location to handle spaces and special characters
     location_encoded = requests.utils.quote(location)
-
-    url = f'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{location_encoded}/next3days?key={api_key}&unitGroup=us&iconSet=icons2'
+    url = f'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{location_encoded}/next5days?key={api_key}&unitGroup=us&iconSet=icons2'
     response = requests.get(url)
     logger.info("Getting weather data from API")
 
@@ -352,15 +346,13 @@ def fetch_weather_data(api_key: str, location: str) -> List[dict]:
 
     data = response.json()
     if 'days' not in data or not data['days']:
-        logger.error("No weather data available for today.")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No weather data available for today.")
+        logger.error("No weather data available.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No weather data available.")
 
-    # Structure data for DB insertion
     weather_entries = []
     for day in data["days"]:
-        # Handle missing fields with default values
         weather_entry = {
-            'date': datetime.strptime(day['datetime'], "%Y-%m-%d"),
+            'date': datetime.strptime(day['datetime'], "%Y-%m-%d").date(),  # Ensure 'date' is a date object
             'location': location,
             'temp_max': day.get('tempmax', 0.0),
             'temp_min': day.get('tempmin', 0.0),
@@ -378,9 +370,14 @@ def fetch_weather_data(api_key: str, location: str) -> List[dict]:
     return weather_entries
 
 
+
 def insert_weather_data_to_db(data: List[dict], user_id: Optional[int] = None):
     """
-    Insert fetched weather data into the database using a new DB session.
+    Inserts or updates weather data into the database.
+    
+    Args:
+        data (List[dict]): List of weather data dictionaries.
+        user_id (Optional[int]): ID of the user, if applicable.
     """
     db = SessionLocal()
     if not data:
@@ -391,25 +388,16 @@ def insert_weather_data_to_db(data: List[dict], user_id: Optional[int] = None):
     try:
         for entry in data:
             existing_record = db.query(WeatherData).filter_by(
-                date=entry['date'], location=entry['location']
+                date=entry['date'], location=entry['location'], user_id=user_id
             ).first()
 
             if existing_record:
                 # Update the existing record
-                existing_record.temp_max = entry['temp_max']
-                existing_record.temp_min = entry['temp_min']
-                existing_record.feels_max = entry['feels_max']
-                existing_record.feels_min = entry['feels_min']
-                existing_record.wind_speed = entry['wind_speed']
-                existing_record.humidity = entry['humidity']
-                existing_record.precipitation = entry['precipitation']
-                existing_record.precipitation_probability = entry['precipitation_probability']
-                existing_record.special_condition = entry['special_condition']
-                existing_record.weather_icon = entry['weather_icon']
-                existing_record.user_id = user_id
+                for key, value in entry.items():
+                    setattr(existing_record, key, value)
                 logger.info(f"Updated existing weather record for {entry['date']} at {entry['location']}.")
             else:
-                # Else input
+                # Insert new record
                 weather_record = WeatherData(
                     date=entry['date'],
                     location=entry['location'],
@@ -436,6 +424,8 @@ def insert_weather_data_to_db(data: List[dict], user_id: Optional[int] = None):
         db.close()
 
 
+
+
 # API Routes
 
 ## User Registration
@@ -449,6 +439,10 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     if existing_user:
         logger.warning(f"Email {user.email} already registered.")
         raise HTTPException(status_code=400, detail="Email already registered.")
+
+    if not user.location:
+        logger.warning("Location not provided during user creation.")
+        raise HTTPException(status_code=400, detail="Location is required.")
 
     # Hash the password
     hashed_password = hash_password(user.password)
@@ -475,6 +469,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
 
     return db_user
+
 
 
 ## User Login
@@ -690,12 +685,8 @@ def delete_wardrobe_item(item_ids: List[int] = Body(..., embed=True), db: Sessio
 
 @app.post("/weather/", response_model=List[WeatherResponse], status_code=status.HTTP_200_OK)
 def get_weather_data(weather_request: WeatherRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    """
-    Fetch weather data for the given user based on their stored location and insert it into the database.
-    """
     logger.info(f"Received weather data request for user_id={weather_request.user_id}")
 
-    # Fetch user from DB to get location
     user = db.query(User).filter(User.user_id == weather_request.user_id).first()
     if not user:
         logger.error(f"User with ID {weather_request.user_id} not found.")
@@ -710,9 +701,8 @@ def get_weather_data(weather_request: WeatherRequest, background_tasks: Backgrou
     try:
         weather_data = fetch_weather_data_from_db(location)
         if not weather_data:
-            logger.info(weather_data)
+            logger.info(f"No full weather data found in DB for location: {location}")
             raise ValueError(f"No full weather data for {location} found in the database.")
-        
     except ValueError:
         try:
             api_key = get_api_key('VISUAL_CROSSING_API_KEY')
@@ -723,7 +713,7 @@ def get_weather_data(weather_request: WeatherRequest, background_tasks: Backgrou
 
         try:
             weather_data = fetch_weather_data(api_key, location)
-            logger.info("Fetched weather data successfully.")
+            logger.info("Fetched weather data successfully from API.")
         except HTTPException as he:
             logger.error(f"HTTPException during weather data fetch: {he.detail}")
             raise he
@@ -742,7 +732,6 @@ def get_weather_data(weather_request: WeatherRequest, background_tasks: Backgrou
     # Return the data
     logger.info("Returning weather data to the client.")
     return weather_data
-
 
 
 ## Fashion Trends Endpoints
@@ -880,6 +869,7 @@ def suggest_outfit_endpoint(request: OutfitSuggestionRequest, db: Session = Depe
     except Exception as e:
         logger.error(f"Error during outfit suggestion: {e}")
         raise HTTPException(status_code=500, detail="Failed to suggest outfits.")
+
 
 
 from sqlalchemy.orm import joinedload
