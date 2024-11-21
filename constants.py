@@ -1,5 +1,3 @@
-# constants.py
-
 ALLOWED_CATEGORIES = [
     # Tops
     'T-Shirt', 'Tank Top', 'Blouse', 'Sweater', 'Hoodie', 'Cardigan',
@@ -7,7 +5,7 @@ ALLOWED_CATEGORIES = [
     'Turtleneck',
 
     # Bottoms
-    'Jeans', 'Shorts', 'Skirt', 'Pants', 'Trouser', 'Cargo Pants',
+    'Jeans', 'Shorts', 'Skirt', 'Pants', 'Cargo Pants',
     'Corduroy Pants', 'Leggings', 'Capri Pants', 'Sweatpants',
     'Jumpsuit', 'Culottes',
 
@@ -29,5 +27,8 @@ ALLOWED_CATEGORIES = [
 
     # Specialty Items
     'Thermal Wear', 'Tights', 'Swimwear',
-    'Thermal Pants', 'Breathable Fabrics', 'Rain Hat'
+    'Thermal Pants', 'Breathable Fabrics',
+
+    # Coordinated Sets
+    'Set'
 ]

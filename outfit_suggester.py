@@ -6,13 +6,11 @@ from sqlalchemy.orm import Session
 from models import FashionTrend, EcommerceProduct, OutfitSuggestion, WeatherData, User
 from fetch_ebay_data import fetch_similar_ebay_products
 import itertools
-import random 
+import random
 import openai
 import re
-import traceback 
+import traceback
 from typing import Optional
-import itertools
-from typing import List, Dict, Any
 import inflect
 
 p = inflect.engine()
@@ -21,6 +19,7 @@ from constants import ALLOWED_CATEGORIES
 
 logger = logging.getLogger(__name__)
 
+# Assuming ALLOWED_CATEGORIES now includes 'Set' as per previous instructions
 
 def singularize(word: str) -> str:
     return p.singular_noun(word) or word
@@ -38,21 +37,36 @@ def categorize_clothing_item_gpt(product_name: str) -> Optional[str]:
     try:
         logger.info(f"Categorizing product: '{product_name}' using GPT-4.")
         prompt = (
-            "You are an expert fashion assistant. Categorize the following clothing item into one of the predefined categories.\n"
-            f"Predefined Categories: {', '.join(ALLOWED_CATEGORIES)}\n"
+            "You are an expert fashion assistant with a deep understanding of various clothing categories. "
+            "Categorize the following clothing item into one of the predefined categories listed below. "
+            "Ensure that each category is mutually exclusive and avoid overlaps. "
+            "Provide only one category as the output.\n\n"
+            "Predefined Categories: " + ", ".join(ALLOWED_CATEGORIES) + "\n\n"
+            "Examples:\n"
+            "- 'Slim Fit Leather Jacket for Men' -> Jacket\n"
+            "- 'Women's Floral Summer Dress Set' -> Set\n"
+            "- 'Classic Blue Denim Jeans' -> Jeans\n"
+            "- 'Coordinated Blazer and Skirt Suit' -> Set\n"
+            "- 'Warm Thermal Sweatpants' -> Sweatpants\n\n"
             f"Item Description: {product_name}\n"
-            "Category:"
+            "Category (choose one from the list):"
         )
         response = openai.ChatCompletion.create(
-            model="gpt-4",  # Correct model name
+            model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are an expert fashion assistant."},
+                {"role": "system", "content": "You are an expert fashion assistant with a deep understanding of various clothing categories."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=10,
             temperature=0.0,  # Ensure deterministic output
+            n=1,
+            stop=["\n"]  # Stop at newline to prevent extra text
         )
         category = response.choices[0].message.content.strip()
+
+        # Clean the category text
+        category = category.split('\n')[0].strip()
+
         # Validate the category
         if category in ALLOWED_CATEGORIES:
             logger.info(f"Categorized '{product_name}' as '{category}'.")
@@ -68,7 +82,7 @@ def categorize_clothing_item_gpt(product_name: str) -> Optional[str]:
         logger.error(f"Unexpected error while categorizing product '{product_name}': {e}")
         logger.debug(traceback.format_exc())
         return None
-    
+
 def determine_product_gender_gpt(product_name: str) -> str:
     """
     Determines the gender category using GPT-4 based on the product name.
@@ -98,7 +112,7 @@ def determine_product_gender_gpt(product_name: str) -> str:
             max_tokens=10,
             temperature=0.2,
         )
-        gender = response['choices'][0]['message']['content'].strip()
+        gender = response['choices'][0].message.content.strip()
         gender = gender.capitalize()
         if gender not in ['Male', 'Female', 'Unisex']:
             logger.warning(f"GPT-4 returned unexpected gender '{gender}' for product '{product_name}'. Defaulting to 'Unisex'.")
@@ -214,9 +228,6 @@ def suggest_outfits(user_id: int, db: Session) -> OutfitSuggestion:
         db.rollback()
         raise
 
-
-
-
 def determine_overall_outfit_gender(outfit_genders: List[str]) -> str:
     """
     Determines the overall gender of the outfit based on individual component genders.
@@ -227,7 +238,6 @@ def determine_overall_outfit_gender(outfit_genders: List[str]) -> str:
         return 'Female'
     else:
         return 'Unisex'
-
 
 def get_latest_weather(db: Session, user_id: int) -> WeatherData:
     """
@@ -255,8 +265,6 @@ def get_latest_weather(db: Session, user_id: int) -> WeatherData:
     else:
         logger.debug("No WeatherData found for the user.")
     return weather
-
-
 
 def get_current_fashion_trends(db: Session) -> List[FashionTrend]:
     """
@@ -292,7 +300,7 @@ def determine_clothing_types(weather: WeatherData, trends: List[FashionTrend]) -
 
     # Snowy Weather
     if 'snow' in condition or 'sleet' in condition:
-        clothing_types.update(['Snow Boots', 'Winter Coat', 'Thermal Gloves', 'Beanie', 'Scarves', 'Thermal Pants'])
+        clothing_types.update(['Snow Boots', 'Winter Coat', 'Thermal Gloves', 'Beanie', 'Scarf', 'Thermal Pants'])
 
     # Cold Weather (<= 45°F)
     if temp_max <= 45:
@@ -326,13 +334,11 @@ def determine_clothing_types(weather: WeatherData, trends: List[FashionTrend]) -
     # Ensure proper list output
     return sorted(list(clothing_types))
 
-
-
 def extract_clothing_types_from_trend(description: str) -> List[str]:
     """
     Extracts clothing types from a trend description using simple keyword matching.
     """
-    keywords = ['jacket', 'blouse', 'skirt', 'sweater', 'dress', 'jeans', 't-shirt', 'shorts', 'boots', 'sandals', 'sneakers', 'coat', 'hoodie', 'tank top', 'heavy boots']
+    keywords = ['jacket', 'blouse', 'skirt', 'sweater', 'dress', 'jeans', 't-shirt', 'shorts', 'boots', 'sandals', 'sneakers', 'coat', 'hoodie', 'tank top', 'heavy boots', 'set', 'suit set']
     extracted = [word.capitalize() for word in keywords if word in description.lower()]
     return extracted
 
@@ -390,8 +396,6 @@ def select_relevant_clothing_items(db: Session, clothing_types: List[str], user_
 
     return products
 
-
-
 def map_product_to_category(suggested_item_type: str) -> Optional[str]:
     """
     Maps a specific clothing item type to a general category.
@@ -416,12 +420,16 @@ def map_product_to_category(suggested_item_type: str) -> Optional[str]:
         ],
         'Outerwear': [
             'jacket', 'coat', 'blazer', 'raincoat', 'windbreaker',
-            'denim jacket', 'leather jacket', 'trench coat'
+            'denim jacket', 'leather jacket', 'trench coat', 'poncho',
+            'winter coat', 'windbreaker'
         ],
         'Accessories': [
             'scarf', 'umbrella', 'hat', 'gloves', 'sunglasses', 'watch', 'earrings', 'necklace', 'bracelet',
-            'poncho', 'thermal wear', 'tights', 'swimwear',
-             
+            'rain hat', 'wide-brim hat', 'thermal gloves', 'beanie',
+            'reflective jacket', 'layers'
+        ],
+        'Set': [
+            'set', 'suit set', 'complete suit'
         ]
     }
     
@@ -430,15 +438,13 @@ def map_product_to_category(suggested_item_type: str) -> Optional[str]:
             return category
     return None
 
-
-
 def generate_outfit_combinations(
     clothing_items: List[EcommerceProduct],
     max_outfits: int = 1  # Set to 1 as per your requirement
 ) -> List[List[Dict[str, Any]]]:
     """
-    Generates possible outfit combinations by selecting one unique 'Top' from each outfit,
-    and randomly pairing it with a 'Bottom' and 'Shoes'. 'Outerwear' and 'Accessories' are optional.
+    Generates possible outfit combinations by selecting one unique 'Top' or 'Set' from each outfit,
+    and randomly pairing it with 'Bottom' and 'Shoes'. 'Outerwear' and 'Accessories' are optional.
     
     Args:
         clothing_items (List[EcommerceProduct]): List of relevant clothing items.
@@ -447,7 +453,7 @@ def generate_outfit_combinations(
     Returns:
         List[List[Dict[str, Any]]]: List of outfit combinations.
     """
-    required_categories = ['Top', 'Bottom', 'Shoes']
+    required_categories = ['Top', 'Bottom', 'Shoes', 'Set']  # Include 'Set' as a required category
     optional_categories = ['Outerwear', 'Accessories']
     grouped_items = {category: [] for category in required_categories + optional_categories}
     
@@ -465,7 +471,16 @@ def generate_outfit_combinations(
         logger.info(f"Category '{category}' has {len(items)} items.")
     
     # Check if all required categories have at least one item
-    missing_required = [cat for cat in required_categories if len(grouped_items[cat]) == 0]
+    missing_required = [cat for cat in ['Top', 'Set'] if len(grouped_items[cat]) == 0]  # 'Set' and 'Top' are mutually exclusive
+    # 'Bottom' and 'Shoes' are still required unless a 'Set' is used
+    if len(grouped_items['Set']) == 0:
+        # If no 'Set', then 'Top', 'Bottom', and 'Shoes' are required
+        missing_required += [cat for cat in ['Bottom', 'Shoes'] if len(grouped_items[cat]) == 0]
+    else:
+        # If 'Set' is present, 'Bottom' and 'Top' are not required
+        if len(grouped_items['Shoes']) == 0:
+            missing_required.append('Shoes')
+    
     if missing_required:
         logger.warning(f"Missing items in required categories: {missing_required}. Cannot form complete outfits.")
         raise ValueError(f"Insufficient clothing items in categories: {', '.join(missing_required)}. Please add more items to your wardrobe.")
@@ -473,45 +488,67 @@ def generate_outfit_combinations(
     # Optional categories can be empty; no need to raise an error
     
     # Shuffle required categories for randomness
-    for category in required_categories:
+    for category in ['Top', 'Set']:
+        random.shuffle(grouped_items[category])
+    
+    for category in ['Bottom', 'Shoes']:
         random.shuffle(grouped_items[category])
     
     # Determine the number of outfits to generate
-    num_outfits = min(len(grouped_items['Top']), max_outfits)
+    num_outfits = min(
+        len(grouped_items['Set']) if len(grouped_items['Set']) > 0 else len(grouped_items['Top']),
+        max_outfits
+    )
     
     outfit_combinations = []
     
     for i in range(num_outfits):
-        top = grouped_items['Top'][i]
-        bottom = random.choice(grouped_items['Bottom'])
-        shoe = random.choice(grouped_items['Shoes'])
-        
-        outfit = [
-            {
+        outfit = []
+        if len(grouped_items['Set']) > 0:
+            # If 'Set' is being used, include only one 'Set'
+            set_item = grouped_items['Set'][i]
+            outfit.append({
+                'clothing_type': 'Set',
+                'item_id': set_item.product_id,
+                'product_name': set_item.product_name,
+                'image_url': set_item.image_url,
+                'eBay_link': None,
+                'gender': set_item.gender
+            })
+        else:
+            # If 'Set' is not used, include 'Top'
+            top = grouped_items['Top'][i]
+            outfit.append({
                 'clothing_type': 'Top',
                 'item_id': top.product_id,
                 'product_name': top.product_name,
                 'image_url': top.image_url,
                 'eBay_link': None,
                 'gender': top.gender
-            },
-            {
-                'clothing_type': 'Bottom',
-                'item_id': bottom.product_id,
-                'product_name': bottom.product_name,
-                'image_url': bottom.image_url,
-                'eBay_link': None,
-                'gender': bottom.gender
-            },
-            {
-                'clothing_type': 'Shoes',
-                'item_id': shoe.product_id,
-                'product_name': shoe.product_name,
-                'image_url': shoe.image_url,
-                'eBay_link': None,
-                'gender': shoe.gender
-            }
-        ]
+            })
+        
+        if len(grouped_items['Set']) == 0:
+            # Only add 'Bottom' and 'Shoes' if 'Set' is not used
+            bottom = random.choice(grouped_items['Bottom'])
+            shoe = random.choice(grouped_items['Shoes'])
+            outfit.extend([
+                {
+                    'clothing_type': 'Bottom',
+                    'item_id': bottom.product_id,
+                    'product_name': bottom.product_name,
+                    'image_url': bottom.image_url,
+                    'eBay_link': None,
+                    'gender': bottom.gender
+                },
+                {
+                    'clothing_type': 'Shoes',
+                    'item_id': shoe.product_id,
+                    'product_name': shoe.product_name,
+                    'image_url': shoe.image_url,
+                    'eBay_link': None,
+                    'gender': shoe.gender
+                }
+            ])
         
         # Optionally add 'Outerwear' if available
         if grouped_items['Outerwear']:
@@ -543,8 +580,6 @@ def generate_outfit_combinations(
     logger.info(f"Generated {len(outfit_combinations)} outfit combination(s).")
     return outfit_combinations
 
-
-
 def fetch_similar_products_for_outfits(outfit_combinations: List[List[Dict[str, Any]]], db: Session) -> List[List[Dict[str, Any]]]:
     """
     For each clothing item in the outfits, fetch similar products from eBay and add the links.
@@ -570,4 +605,3 @@ def fetch_similar_products_for_outfits(outfit_combinations: List[List[Dict[str, 
                 component['eBay_link'] = []  # Assign empty list
                 component['gender'] = 'Unisex'  # Default
     return outfit_combinations
-

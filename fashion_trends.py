@@ -79,16 +79,24 @@ def categorize_clothing_item_gpt(product_name: str) -> Optional[str]:
     try:
         logger.info(f"Categorizing product: '{product_name}' using GPT-4.")
         prompt = (
-            "You are an expert fashion assistant. "
-            "Categorize the following clothing item into one of the predefined categories.\n"
-            f"Predefined Categories: {', '.join(ALLOWED_CATEGORIES)}\n"
+            "You are an expert fashion assistant with a deep understanding of various clothing categories. "
+            "Categorize the following clothing item into one of the predefined categories listed below. "
+            "Ensure that each category is mutually exclusive and avoid overlaps. "
+            "Provide only one category as the output.\n\n"
+            "Predefined Categories: " + ", ".join(ALLOWED_CATEGORIES) + "\n\n"
+            "Examples:\n"
+            "- 'Slim Fit Leather Jacket for Men' -> Jacket\n"
+            "- 'Women's Floral Summer Dress Set' -> Set\n"
+            "- 'Classic Blue Denim Jeans' -> Jeans\n"
+            "- 'Coordinated Blazer and Skirt Suit' -> Set\n"
+            "- 'Warm Thermal Sweatpants' -> Sweatpants\n\n"
             f"Item Description: {product_name}\n"
             "Category (choose one from the list):"
         )
         response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are an expert fashion assistant."},
+                {"role": "system", "content": "You are an expert fashion assistant with a deep understanding of various clothing categories."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=10,
@@ -97,10 +105,10 @@ def categorize_clothing_item_gpt(product_name: str) -> Optional[str]:
             stop=["\n"]  # Stop at newline to prevent extra text
         )
         category = response.choices[0].message.content.strip()
-        
+
         # Clean the category text
         category = category.split('\n')[0].strip()
-        
+
         # Validate the category
         if category in ALLOWED_CATEGORIES:
             logger.info(f"Categorized '{product_name}' as '{category}'.")
@@ -116,6 +124,7 @@ def categorize_clothing_item_gpt(product_name: str) -> Optional[str]:
         logger.error(f"Unexpected error while categorizing product '{product_name}': {e}")
         logger.debug(traceback.format_exc())
         return None
+
 
 
 from functools import lru_cache
