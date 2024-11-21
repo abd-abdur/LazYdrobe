@@ -568,6 +568,6 @@ def fetch_similar_products_for_outfits(outfit_combinations: List[List[Dict[str, 
             except Exception as e:
                 logger.error(f"Failed to fetch eBay links for '{product_name}': {e}")
                 component['eBay_link'] = []  # Assign empty list
-                component['gender'] = 'Unisex'  # Default
+                component['gender'] = 'Unisex'  # Default- yes
     return outfit_combinations
 
