@@ -915,54 +915,18 @@ def get_outfit_suggestions(user_id: int, db: Session = Depends(get_db)):
 
 @app.delete("/outfits/suggestions/all", status_code=status.HTTP_204_NO_CONTENT)
 def delete_all_outfit_suggestions(user_id: int, db: Session = Depends(get_db)):
-    """
-    Deletes all outfit suggestions for a specific user.
-    """
-    logger.info(f"Attempting to delete all outfit suggestions for user ID: {user_id}")
-
-    outfit_suggestions = db.query(OutfitSuggestion).filter(OutfitSuggestion.user_id == user_id).all()
-
-    if not outfit_suggestions:
-        logger.warning(f"No outfit suggestions found for user ID: {user_id}")
-        raise HTTPException(status_code=404, detail="No outfit suggestions found for this user.")
-
-    try:
-        for suggestion in outfit_suggestions:
-            db.delete(suggestion)
-        db.commit()
-        logger.info(f"All outfit suggestions for user ID {user_id} deleted successfully.")
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Failed to delete all outfit suggestions for user ID {user_id}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to delete all outfit suggestions.")
-
-    return
-
-
-
-@app.delete("/outfits/suggestions/all", status_code=status.HTTP_204_NO_CONTENT)
-def delete_all_outfit_suggestions(user_id: int, db: Session = Depends(get_db)):
-    """
-    Deletes all outfit suggestions for a specific user.
-    """
-    logger.info(f"Attempting to delete all outfit suggestions for user ID: {user_id}")
-
-    outfit_suggestions = db.query(OutfitSuggestion).filter(OutfitSuggestion.user_id == user_id).all()
-
-    if not outfit_suggestions:
-        logger.warning(f"No outfit suggestions found for user ID: {user_id}")
-        raise HTTPException(status_code=404, detail="No outfit suggestions found for this user.")
-
-    try:
-        for suggestion in outfit_suggestions:
-            db.delete(suggestion)
-        db.commit()
-        logger.info(f"All outfit suggestions for user ID {user_id} deleted successfully.")
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Failed to delete all outfit suggestions for user ID {user_id}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to delete all outfit suggestions.")
-
+    logger.info(f"Deleting all outfit suggestions for user_id={user_id}")
+    
+    # Verify if the user exists
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        logger.error(f"User with ID {user_id} not found.")
+        raise HTTPException(status_code=404, detail="User not found.")
+    
+    # Delete all outfit suggestions for the user
+    deleted = db.query(OutfitSuggestion).filter(OutfitSuggestion.user_id == user_id).delete()
+    db.commit()
+    logger.info(f"Deleted {deleted} outfit suggestion(s) for user_id={user_id}.")
     return
 
 ## Exception Handlers
