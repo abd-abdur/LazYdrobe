@@ -11,6 +11,7 @@ import os
 from dotenv import load_dotenv
 import requests
 import logging
+from fastapi import BackgroundTasks 
 
 # Import models from models.py
 from models import Base, User, EcommerceProduct, WardrobeItem, Outfit, FashionTrend, WeatherData, OutfitSuggestion
@@ -279,7 +280,7 @@ def get_api_key(key_name: str) -> str:
                             detail=f"{key_name} not found in environment variables.")
     return api_key
 
-def fetch_weather_data_from_db(location: str) -> List[dict]:
+def fetch_weather_data_from_db(location: str, user_id: Optional[int] = None) -> List[dict]:
     today = datetime.utcnow().date()
     db = SessionLocal()
 
@@ -287,35 +288,33 @@ def fetch_weather_data_from_db(location: str) -> List[dict]:
     logger.info(f"Fetching data from database for location: {location}")
 
     try:
-        for i in range(5):  # Fetch 5 days as per comment
-            target_date = today + timedelta(days=i)
-            entry = (
-                db.query(WeatherData)
-                .filter(
-                    WeatherData.location == location,
-                    WeatherData.date == target_date  # Assuming 'date' is of DATE type
-                )
-                .first()
-            )
-            if entry:
-                weather_data.append({
-                    'date': entry.date,
-                    'location': entry.location,
-                    'temp_max': entry.temp_max,
-                    'temp_min': entry.temp_min,
-                    'feels_max': entry.feels_max,
-                    'feels_min': entry.feels_min,
-                    'wind_speed': entry.wind_speed,
-                    'humidity': entry.humidity,
-                    'precipitation': entry.precipitation,
-                    'precipitation_probability': entry.precipitation_probability,
-                    'special_condition': entry.special_condition,
-                    'weather_icon': entry.weather_icon,
-                })
-                logger.info(f"Obtained weather data for {target_date}")
-            else:
-                logger.info(f"No weather data found for {target_date}")
-                break  # Exit early if data for a day is missing
+        # Fetch weather data in descending order to get the latest first
+        query = db.query(WeatherData).filter(
+            WeatherData.location == location,
+            WeatherData.date >= today
+        ).order_by(WeatherData.date.desc())  # Descending order
+
+        if user_id:
+            query = query.filter(WeatherData.user_id == user_id)
+
+        entries = query.limit(5).all()  # Fetch up to 5 latest days
+
+        for entry in entries:
+            weather_data.append({
+                'date': entry.date,
+                'location': entry.location,
+                'temp_max': entry.temp_max,
+                'temp_min': entry.temp_min,
+                'feels_max': entry.feels_max,
+                'feels_min': entry.feels_min,
+                'wind_speed': entry.wind_speed,
+                'humidity': entry.humidity,
+                'precipitation': entry.precipitation,
+                'precipitation_probability': entry.precipitation_probability,
+                'special_condition': entry.special_condition,
+                'weather_icon': entry.weather_icon,
+            })
+            logger.info(f"Obtained weather data for {entry.date}")
     except Exception as e:
         logger.error(f"Error fetching data from database: {e}")
         return []
@@ -513,7 +512,7 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
 ## Update User Information
 
 @app.put("/users/{user_id}", response_model=UserResponse)
-def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db)):
+def update_user(user_id: int, user_update: UserUpdate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     logger.info(f"Updating user with ID: {user_id}")
     logger.debug(f"Update data received: {user_update.dict()}")
 
@@ -521,6 +520,13 @@ def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get
     if not user:
         logger.warning(f"User with ID {user_id} not found.")
         raise HTTPException(status_code=404, detail="User not found.")
+
+    # Determine if location is being updated
+    location_updated = False
+    old_location = user.location
+    if user_update.location and user_update.location != user.location:
+        location_updated = True
+        logger.info(f"User ID {user_id} location updated from '{old_location}' to '{user_update.location}'.")
 
     # If password is being updated, hash it
     if user_update.password:
@@ -541,6 +547,21 @@ def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get
         db.rollback()
         logger.error(f"Failed to update user: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update user: {str(e)}")
+
+    # If location was updated, fetch and insert new weather data
+    if location_updated:
+        try:
+            logger.info(f"Fetching and inserting weather data for new location '{user.location}'.")
+            api_key = get_api_key('VISUAL_CROSSING_API_KEY')
+            weather_data = fetch_weather_data(api_key, user.location)
+            insert_weather_data_to_db(weather_data, user_id=user_id)
+            logger.info(f"Weather data for location '{user.location}' inserted successfully.")
+        except HTTPException as he:
+            logger.error(f"HTTPException during weather data fetch: {he.detail}")
+            raise HTTPException(status_code=500, detail="Failed to fetch and insert weather data after location update.")
+        except Exception as e:
+            logger.error(f"Unexpected error during weather data fetch: {e}")
+            raise HTTPException(status_code=500, detail="An unexpected error occurred while fetching weather data after location update.")
 
     return user
 

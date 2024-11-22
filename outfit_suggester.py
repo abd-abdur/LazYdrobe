@@ -32,6 +32,56 @@ def singularize(word: str) -> str:
     return p.singular_noun(word) or word
 
 
+def map_product_to_category(suggested_item_type: str) -> Optional[str]:
+    """
+    Maps a specific clothing item type to a general category.
+    
+    Args:
+        suggested_item_type (str): The specific type of the clothing item.
+    
+    Returns:
+        Optional[str]: The general category of the clothing item or None if no match found.
+    """
+    singular_type = singularize(suggested_item_type).strip().lower()
+    suggested_item_type_lower = suggested_item_type.strip().lower()
+
+    categories = {
+        'Top': [
+            't-shirt', 'tank top', 'blouse', 'sweater', 'hoodie', 'cardigan',
+            'shirt', 'crop top', 'camisole', 'polo shirt', 'long sleeve shirt',
+            'turtleneck', 'thermal wear'
+        ],
+        'Bottom': [
+            'jeans', 'shorts', 'skirt', 'pants', 'trouser', 'cargo pants',
+            'corduroy pants', 'leggings', 'capri pants', 'sweatpants',
+            'jumpsuit', 'culottes', 'thermal wear', 'tights'
+        ],
+        'Shoes': [
+            'sneakers', 'sandals', 'boots', 'heavy boot', 'shoe',
+            'loafers', 'flats', 'slippers', 'heels'
+        ],
+        'Outerwear': [
+            'jacket', 'coat', 'blazer', 'raincoat', 'windbreaker',
+            'denim jacket', 'leather jacket', 'trench coat', 'poncho',
+            'winter coat'
+        ],
+        'Accessories': [
+            'gloves', 'necklace', 'scarf', 'sunglasses', 'hat', 'belt',
+            'watch', 'earrings', 'bracelet', 'handbag'
+        ],
+        'Set': [
+            'set', 'suit set', 'complete suit', 'jumpsuit'
+        ]
+    }
+
+    for category, items in categories.items():
+        if singular_type in items or suggested_item_type_lower in items:
+            logger.debug(f"Mapped '{suggested_item_type}' to category '{category}'.")
+            return category
+    logger.warning(f"Could not map '{suggested_item_type}' to any category.")
+    return None
+
+
 def categorize_clothing_item_gpt(product_name: str) -> Optional[str]:
     """
     Categorizes a clothing item into one of the predefined categories using GPT-4.
@@ -270,7 +320,7 @@ def should_include_outerwear(weather: WeatherData) -> bool:
     condition = weather.special_condition.lower()
 
     # Define a temperature threshold for cold weather (e.g., <= 60°F)
-    cold_threshold = 60
+    cold_threshold = 35
 
     # Additional conditions for cold weather
     cold_conditions = ['snow', 'sleet', 'blizzard', 'freezing', 'cold']
@@ -357,25 +407,25 @@ def determine_clothing_types(weather: WeatherData, trends: List[FashionTrend]) -
     if 'snow' in condition or 'sleet' in condition:
         clothing_types.update(['Snow Boots', 'Winter Coat', 'Gloves', 'Beanie', 'Scarf', 'Thermal Pants'])
 
-    # Cold Weather (<= 45°F)
-    if temp_max <= 45:
-        clothing_types.update(['Pants', 'Jeans' , 'Sweater', 'T-Shirt', 'Shoe', 'Thermal Wear', 'Gloves', 'Beanie', 'Insulated Boots', 'Scarf', 'Turtleneck', 'Boots', 'Jeans'])
+    # Cold Weather (<= 35°F)
+    if temp_max <= 35:
+        clothing_types.update([ 'Sneakers', 'Sweater', 'Jeans', 'Pants', 'Thermal Wear', 'Gloves', 'Beanie', 'Insulated Boots', 'Scarf', 'Turtleneck', 'Boots', 'Hoodie', 'Cardigan'])
 
     # Warm Weather (> 75°F)
     if temp_max > 75:
-        clothing_types.update(['Shorts', 'Flats',  'Heels', 'Jeans', 'T-Shirt', 'Pants', 'Tank Top', 'Sandals', 'Shoe', 'Sneakers', 'Skirt', 'Blouse', 'Dress', 'Camisole', 'Crop Top'])
+        clothing_types.update(['Shorts', 'Flats', 'Heels', 'Jeans', 'T-Shirt', 'Pants', 'Tank Top', 'Sandals', 'Shoe', 'Sneakers', 'Skirt', 'Blouse', 'Dress', 'Camisole', 'Crop Top'])
 
     # Mild Weather (60°F to 75°F)
     if 60 < temp_max <= 75:
         clothing_types.update(['Jeans', 'Heels', 'Boots', 'T-Shirt', 'Shoe', 'Pants', 'Sneakers', 'Light Jacket', 'Blouse', 'Skirt', 'Dress', 'Leggings', 'Capri Pants'])
 
-    # Cool Weather (45°F to 60°F)
-    if 45 < temp_max <= 60:
-        clothing_types.update(['Sweater', 'Shoe', 'Boots', 'T-Shirt', 'Sneakers', 'Blazer', 'Pants', 'Jeans', 'Hoodie', 'Cardigan', 'Thermal Wear'])
+    # Cool Weather (35°F to 60°F)
+    if 35 < temp_max <= 60:
+        clothing_types.update(['Sweater', 'Shoe', 'Boots', 'T-Shirt', 'Sneakers', 'Jacket', 'Coat', 'Pants', 'Jeans', 'Hoodie', 'Cardigan', 'Thermal Wear'])
 
     # Special Weather Conditions
     if 'windy' in condition:
-        clothing_types.update(['Windbreaker', 'Hooded Jacket', 'Scarf'])
+        clothing_types.update(['Windbreaker', 'Scarf'])
     if 'humid' in condition:
         clothing_types.update(['Breathable Fabrics', 'Linen Shirt', 'Shorts', 'Sandals'])
     if 'fog' in condition:
@@ -403,7 +453,8 @@ def extract_clothing_types_from_trend(description: str) -> List[str]:
     keywords = [
         'jacket', 'blouse', 'skirt', 'sweater', 'dress', 'jeans', 't-shirt', 'shorts',
         'boots', 'sandals', 'sneakers', 'coat', 'hoodie', 'tank top', 'heavy boots',
-        'set', 'suit set', 'complete suit'
+        'set', 'suit set', 'complete suit', 'jumpsuit', 'gloves', 'necklace', 'scarf',
+        'flats', 
     ]
     extracted = [word.capitalize() for word in keywords if word in description.lower()]
     return extracted
@@ -462,77 +513,6 @@ def select_relevant_clothing_items(db: Session, clothing_types: List[str], user_
     logger.info(f"Category distribution: {category_distribution}")
 
     return products
-
-
-def map_product_to_category(suggested_item_type: str) -> Optional[str]:
-    """
-    Maps a specific clothing item type to a general category.
-    
-    Args:
-        suggested_item_type (str): The specific type of the clothing item.
-    
-    Returns:
-        Optional[str]: The general category of the clothing item or None if no match found.
-    """
-    singular_type = singularize(suggested_item_type).strip().lower()
-    suggested_item_type_lower = suggested_item_type.strip().lower()
-
-    categories = {
-        'Top': [
-            't-shirt', 'tank top', 'blouse', 'sweater', 'hoodie', 'cardigan',
-            'shirt', 'crop top', 'camisole', 'polo shirt', 'long sleeve shirt',
-            'turtleneck', 'thermal wear'
-        ],
-        'Bottom': [
-            'jeans', 'shorts', 'skirt', 'pants', 'trouser', 'cargo pants',
-            'corduroy pants', 'leggings', 'capri pants', 'sweatpants',
-            'jumpsuit', 'culottes'
-        ],
-        'Shoes': [
-            'sneakers', 'sandals', 'boots', 'heavy boot', 'shoe',
-            'loafers', 'flats', 'slippers', 'heels', 'flats', 'heels'
-            , 'sandals'
-        ],
-        'Outerwear': [
-            'jacket', 'coat', 'blazer', 'raincoat', 'windbreaker',
-            'denim jacket', 'leather jacket', 'trench coat', 'poncho',
-            'winter coat', 'windbreaker'
-        ],
-        'Accessories': [
-        ],
-        'Set': [
-            'set', 'suit set', 'complete suit', 'jumpsuit'
-        ]
-    }
-
-    for category, items in categories.items():
-        if singular_type in items or suggested_item_type_lower in items:
-            return category
-    return None
-
-
-def should_include_outerwear(weather: WeatherData) -> bool:
-    """
-    Determines whether Outerwear should be included based on the current weather conditions.
-    
-    Args:
-        weather (WeatherData): Current weather data.
-        
-    Returns:
-        bool: True if Outerwear should be included, False otherwise.
-    """
-    temp_max = weather.temp_max
-    condition = weather.special_condition.lower()
-
-    # Define a temperature threshold for cold weather (e.g., <= 60°F)
-    cold_threshold = 60
-
-    # Additional conditions for cold weather
-    cold_conditions = ['snow', 'sleet', 'blizzard', 'freezing', 'cold']
-
-    if temp_max <= cold_threshold or any(word in condition for word in cold_conditions):
-        return True
-    return False
 
 
 def generate_outfit_combinations(
