@@ -1,8 +1,8 @@
-"""Initial migration
+"""initial migration
 
-Revision ID: 0f36ba8f711c
+Revision ID: 1d789e209e21
 Revises: 
-Create Date: 2024-11-14 14:42:03.744753
+Create Date: 2024-11-21 21:03:14.260492
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '0f36ba8f711c'
+revision: str = '1d789e209e21'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -40,10 +40,12 @@ def upgrade() -> None:
     sa.Column('product_name', sa.String(length=255), nullable=False),
     sa.Column('suggested_item_type', sa.String(length=255), nullable=True),
     sa.Column('price', sa.Float(), nullable=False),
+    sa.Column('currency', sa.String(length=10), nullable=False),
     sa.Column('product_url', sa.String(length=255), nullable=False),
     sa.Column('image_url', sa.String(length=255), nullable=True),
     sa.Column('date_suggested', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.Column('gender', sa.String(length=10), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ),
     sa.PrimaryKeyConstraint('product_id'),
     sa.UniqueConstraint('ebay_item_id')
@@ -51,19 +53,33 @@ def upgrade() -> None:
     op.create_index(op.f('ix_ecommerce_products_product_id'), 'ecommerce_products', ['product_id'], unique=False)
     op.create_table('fashion_trends',
     sa.Column('trend_id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('trend_name', sa.String(length=1000), nullable=False),
+    sa.Column('trend_name', sa.String(length=255), nullable=False),
     sa.Column('trend_description', sa.Text(), nullable=False),
     sa.Column('date_added', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('trend_search_phrase', sa.String(length=255), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ),
     sa.PrimaryKeyConstraint('trend_id')
     )
+    op.create_index(op.f('ix_fashion_trends_trend_name'), 'fashion_trends', ['trend_name'], unique=False)
+    op.create_table('outfit_suggestions',
+    sa.Column('suggestion_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('outfit_details', sa.JSON(), nullable=False),
+    sa.Column('date_suggested', sa.DateTime(), nullable=False),
+    sa.Column('gender', sa.String(length=10), nullable=False),
+    sa.Column('image_url', sa.String(length=2083), nullable=True),
+    sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ),
+    sa.PrimaryKeyConstraint('suggestion_id')
+    )
+    op.create_index(op.f('ix_outfit_suggestions_suggestion_id'), 'outfit_suggestions', ['suggestion_id'], unique=False)
     op.create_table('outfits',
     sa.Column('outfit_id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('occasion', sa.JSON(), nullable=True),
+    sa.Column('clothings', sa.JSON(), nullable=False),
     sa.Column('for_weather', sa.String(length=255), nullable=True),
-    sa.Column('source_url', sa.String(length=255), nullable=True),
+    sa.Column('source_url', sa.String(length=511), nullable=True),
     sa.Column('date_suggested', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ),
     sa.PrimaryKeyConstraint('outfit_id')
@@ -115,6 +131,9 @@ def downgrade() -> None:
     op.drop_table('weather_data')
     op.drop_index(op.f('ix_outfits_outfit_id'), table_name='outfits')
     op.drop_table('outfits')
+    op.drop_index(op.f('ix_outfit_suggestions_suggestion_id'), table_name='outfit_suggestions')
+    op.drop_table('outfit_suggestions')
+    op.drop_index(op.f('ix_fashion_trends_trend_name'), table_name='fashion_trends')
     op.drop_table('fashion_trends')
     op.drop_index(op.f('ix_ecommerce_products_product_id'), table_name='ecommerce_products')
     op.drop_table('ecommerce_products')

@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 import requests
 import logging
 from fastapi import BackgroundTasks 
+from pydantic import AnyHttpUrl 
 
 # Import models from models.py
 from models import Base, User, EcommerceProduct, WardrobeItem, Outfit, FashionTrend, WeatherData, OutfitSuggestion
@@ -232,6 +233,7 @@ class OutfitSuggestionResponse(BaseModel):
     outfit_details: List[List[OutfitComponent]]
     gender: str
     date_suggested: datetime
+    image_url: Optional[AnyHttpUrl] = None
 
     class Config:
         orm_mode = True
@@ -244,6 +246,7 @@ class OutfitSuggestionCreateResponse(BaseModel):
     outfit_details: List[List[OutfitComponent]]
     gender: str
     date_suggested: datetime
+    image_url: Optional[AnyHttpUrl] = None
 
     class Config:
         orm_mode = True
@@ -910,31 +913,57 @@ def get_outfit_suggestions(user_id: int, db: Session = Depends(get_db)):
     
     return suggestions
 
-@app.delete("/outfits/suggestions/{suggestion_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_outfit_suggestion(suggestion_id: int, db: Session = Depends(get_db)):
+@app.delete("/outfits/suggestions/all", status_code=status.HTTP_204_NO_CONTENT)
+def delete_all_outfit_suggestions(user_id: int, db: Session = Depends(get_db)):
     """
-    Deletes an outfit suggestion by its ID.
+    Deletes all outfit suggestions for a specific user.
     """
-    logger.info(f"Attempting to delete outfit suggestion ID: {suggestion_id}")
-    
-    outfit_suggestion = db.query(OutfitSuggestion).filter(OutfitSuggestion.suggestion_id == suggestion_id).first()
-    
-    if not outfit_suggestion:
-        logger.warning(f"Outfit suggestion with ID {suggestion_id} not found.")
-        raise HTTPException(status_code=404, detail="Outfit suggestion not found.")
-    
+    logger.info(f"Attempting to delete all outfit suggestions for user ID: {user_id}")
+
+    outfit_suggestions = db.query(OutfitSuggestion).filter(OutfitSuggestion.user_id == user_id).all()
+
+    if not outfit_suggestions:
+        logger.warning(f"No outfit suggestions found for user ID: {user_id}")
+        raise HTTPException(status_code=404, detail="No outfit suggestions found for this user.")
+
     try:
-        db.delete(outfit_suggestion)
+        for suggestion in outfit_suggestions:
+            db.delete(suggestion)
         db.commit()
-        logger.info(f"Outfit suggestion ID {suggestion_id} deleted successfully.")
+        logger.info(f"All outfit suggestions for user ID {user_id} deleted successfully.")
     except Exception as e:
         db.rollback()
-        logger.error(f"Failed to delete outfit suggestion ID {suggestion_id}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to delete outfit suggestion.")
-    
+        logger.error(f"Failed to delete all outfit suggestions for user ID {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete all outfit suggestions.")
+
     return
 
 
+
+@app.delete("/outfits/suggestions/all", status_code=status.HTTP_204_NO_CONTENT)
+def delete_all_outfit_suggestions(user_id: int, db: Session = Depends(get_db)):
+    """
+    Deletes all outfit suggestions for a specific user.
+    """
+    logger.info(f"Attempting to delete all outfit suggestions for user ID: {user_id}")
+
+    outfit_suggestions = db.query(OutfitSuggestion).filter(OutfitSuggestion.user_id == user_id).all()
+
+    if not outfit_suggestions:
+        logger.warning(f"No outfit suggestions found for user ID: {user_id}")
+        raise HTTPException(status_code=404, detail="No outfit suggestions found for this user.")
+
+    try:
+        for suggestion in outfit_suggestions:
+            db.delete(suggestion)
+        db.commit()
+        logger.info(f"All outfit suggestions for user ID {user_id} deleted successfully.")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to delete all outfit suggestions for user ID {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete all outfit suggestions.")
+
+    return
 
 ## Exception Handlers
 

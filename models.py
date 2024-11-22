@@ -125,6 +125,7 @@ class OutfitSuggestion(Base):
     user_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
     outfit_details = Column(JSON, nullable=False)  # Assuming JSON type for outfit_details
     date_suggested = Column(DateTime, default=datetime.utcnow, nullable=False)
-    gender = Column(String, nullable=False)
+    gender = Column(String(10), nullable=False)
+    image_url = Column(String(2083), nullable=True)
 
     user = relationship("User", back_populates="outfit_suggestions")

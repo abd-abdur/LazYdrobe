@@ -9,6 +9,8 @@ import random
 import openai
 import traceback
 import inflect
+import fal_client 
+import os
 
 p = inflect.engine()
 
@@ -285,15 +287,19 @@ def suggest_outfits(user_id: int, db: Session) -> OutfitSuggestion:
         # 10. Save Outfit Suggestions to Database
         overall_gender = determine_overall_outfit_gender(outfit_genders)
 
+        # 11. Generate Image using Flux AI
+        image_url = generate_outfit_image(enriched_outfits[0])  # Assuming one outfit combination
+
         outfit_suggestion = OutfitSuggestion(
             user_id=user_id,
-            outfit_details=enriched_outfits,  # This should be a list of lists containing outfit components with eBay links
-            gender=overall_gender  # Aggregate gender
+            outfit_details=enriched_outfits,  # List of outfit components with eBay links
+            gender=overall_gender,  # Aggregate gender
+            image_url=image_url  # Store the generated image URL
         )
         db.add(outfit_suggestion)
         db.commit()
         db.refresh(outfit_suggestion)
-        logger.info(f"Saved outfit suggestion ID {outfit_suggestion.suggestion_id} for user ID {user_id} with gender '{overall_gender}'.")
+        logger.info(f"Saved outfit suggestion ID {outfit_suggestion.suggestion_id} for user ID {user_id} with gender '{overall_gender}' and image URL '{image_url}'.")
 
         return outfit_suggestion
 
@@ -695,3 +701,75 @@ def fetch_similar_products_for_outfits(outfit_combinations: List[List[Dict[str, 
                 component['eBay_link'] = []  # Assign empty list
                 component['gender'] = 'Unisex'  # Default
     return outfit_combinations
+
+def generate_outfit_image(outfit_components: List[Dict[str, Any]]) -> Optional[str]:
+    """
+    Generates an image of the outfit using Flux AI by sending the clothing item names.
+    
+    Args:
+        outfit_components (List[Dict[str, Any]]): List of clothing components in the outfit.
+    
+    Returns:
+        Optional[str]: URL of the generated image or None if generation fails.
+    """
+    try:
+        logger.info("Starting image generation using Flux AI.")
+        
+        # Extract clothing item descriptions
+        clothing_descriptions = []
+        for component in outfit_components:
+            clothing_type = component['clothing_type']
+            product_name = component['product_name']
+            # Customize the description as needed
+            description = f"**{clothing_type}:** {product_name}"
+            clothing_descriptions.append(description)
+        
+        # Compose the prompt
+        prompt = (
+            "Create an image of a stylish individual wearing the following outfit:\n\n" +
+            "\n".join([f"{idx + 1}. {desc}" for idx, desc in enumerate(clothing_descriptions)]) +
+            "\n\n"
+            "The individual should have a confident and relaxed pose, evoking a modern and elegant aesthetic. "
+            "Use a neutral studio background with soft lighting to highlight the outfit. Ensure the outfit fits naturally and realistically on the individual, "
+            "emphasizing the textures and styles of the clothing items."
+        )
+        
+        # Set your Flux AI API key
+        fal_client_key = os.getenv("FAL_KEY")
+        if not fal_client_key:
+            logger.error("FAL_KEY is not set in environment variables.")
+            return None  # Alternatively, raise an exception
+
+        os.environ["FAL_KEY"] = fal_client_key  # Ensure the API key is set
+
+        # Function to handle log updates
+        def on_queue_update(update):
+            if isinstance(update, fal_client.InProgress):
+                for log_entry in update.logs:
+                    logger.debug(f"Flux AI Log: {log_entry['message']}")
+
+        # Submit the request to Flux AI
+        logger.info("Submitting image generation request to Flux AI.")
+        result = fal_client.subscribe(
+            "fal-ai/flux/dev",  # Model identifier; adjust as needed
+            arguments={
+                "prompt": prompt,
+                "image_size": "landscape_16_9",  # Aspect ratio suitable for human model display
+                "num_inference_steps": 50,      # High-quality output
+                "guidance_scale": 8.0,          # Strong adherence to the prompt
+                "num_images": 1,                # Generate one image
+                "enable_safety_checker": True   # Enable safety checks
+            },
+            with_logs=True,                    # Enable logs for updates
+            on_queue_update=on_queue_update    # Log handler for real-time feedback
+        )
+
+        # Extract the image URL
+        image_url = result['images'][0]['url']
+        logger.info(f"Image generated successfully: {image_url}")
+        return image_url
+
+    except Exception as e:
+        logger.error(f"Error generating outfit image: {e}")
+        logger.debug(traceback.format_exc())
+        return None
