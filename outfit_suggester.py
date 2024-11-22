@@ -252,7 +252,11 @@ def suggest_outfits(user_id: int, db: Session) -> OutfitSuggestion:
         logger.info(f"Outerwear inclusion based on weather: {'Yes' if include_outerwear else 'No'}")
 
         # 7. Generate Outfit Combinations
-        outfit_combinations = generate_outfit_combinations(selected_items, max_outfits=1, include_outerwear=include_outerwear)
+        outfit_combinations = generate_outfit_combinations(
+            selected_items,
+            max_outfits=1,
+            include_outerwear=include_outerwear
+        )
         if not outfit_combinations:
             raise ValueError("Insufficient clothing items across categories to form outfits. Please add more items to your wardrobe.")
         logger.info(f"Generated {len(outfit_combinations)} outfit combination(s).")
@@ -521,25 +525,14 @@ def select_relevant_clothing_items(db: Session, clothing_types: List[str], user_
     return products
 
 
+import random  # Ensure you have imported random at the top of your file
+
 def generate_outfit_combinations(
     clothing_items: List[EcommerceProduct],
-    max_outfits: int = 1,  # Set to 1 as per your requirement
-    include_outerwear: bool = False  # New parameter to control Outerwear inclusion
+    max_outfits: int = 1,
+    include_outerwear: bool = False
 ) -> List[List[Dict[str, Any]]]:
-    """
-    Generates possible outfit combinations by selecting one unique 'Top' or 'Set' from each outfit,
-    and randomly pairing it with 'Bottom' and 'Shoes'. 'Outerwear' and 'Accessories' are optional
-    and included based on the 'include_outerwear' flag.
-    
-    Args:
-        clothing_items (List[EcommerceProduct]): List of relevant clothing items.
-        max_outfits (int): Maximum number of outfits to generate.
-        include_outerwear (bool): Flag to include Outerwear items based on weather.
-    
-    Returns:
-        List[List[Dict[str, Any]]]: List of outfit combinations.
-    """
-    required_categories = ['Shoes']  # 'Shoes' is always required
+    required_categories = ['Shoes']
     optional_categories = ['Accessories']
     grouped_items = {category: [] for category in required_categories + optional_categories + ['Set', 'Top', 'Bottom', 'Outerwear']}
 
@@ -552,55 +545,45 @@ def generate_outfit_combinations(
         else:
             logger.debug(f"Item '{item.product_name}' with type '{item.suggested_item_type}' could not be mapped to a general category.")
 
-    # Log the number of items in each category
+    # Logging the number of items in each category
     for category, items in grouped_items.items():
         logger.info(f"Category '{category}' has {len(items)} items.")
 
-    # Determine outfit requirements
-    # An outfit must have Shoes and either:
-    # - A Set
-    # - Both Top and Bottom
+    # Outfit Requirements
     if len(grouped_items['Shoes']) == 0:
         logger.warning("Missing items in required categories: Shoes. Cannot form complete outfits.")
         raise ValueError("Insufficient clothing items in category: Shoes. Please add more items to your wardrobe.")
 
-    if len(grouped_items['Set']) == 0:
-        # If no Set, Top and Bottom are required
-        if len(grouped_items['Top']) == 0 or len(grouped_items['Bottom']) == 0:
-            missing = []
-            if len(grouped_items['Top']) == 0:
-                missing.append('Top')
-            if len(grouped_items['Bottom']) == 0:
-                missing.append('Bottom')
-            logger.warning(f"Missing items in required categories: {', '.join(missing)}. Cannot form complete outfits.")
-            raise ValueError(f"Insufficient clothing items in categories: {', '.join(missing)}. Please add more items to your wardrobe.")
-    else:
-        # If Set is available, it's optional to use it instead of Top and Bottom
-        pass  # No additional requirements
+    # Determine if 'Set' or 'Top-Bottom' can be used
+    can_use_set = len(grouped_items['Set']) > 0
+    can_use_top_bottom = len(grouped_items['Top']) > 0 and len(grouped_items['Bottom']) > 0
 
-    # Shuffle required categories for randomness
-    if len(grouped_items['Set']) > 0:
-        random.shuffle(grouped_items['Set'])
-    if len(grouped_items['Top']) > 0:
-        random.shuffle(grouped_items['Top'])
-    if len(grouped_items['Bottom']) > 0:
-        random.shuffle(grouped_items['Bottom'])
-    if len(grouped_items['Shoes']) > 0:
-        random.shuffle(grouped_items['Shoes'])
+    if not can_use_set and not can_use_top_bottom:
+        logger.warning("Insufficient clothing items to form either Sets or Top-Bottom combinations.")
+        raise ValueError("Insufficient clothing items to form either Sets or Top-Bottom combinations. Please add more items to your wardrobe.")
+
+    # Shuffle items for randomness
+    for category in grouped_items:
+        random.shuffle(grouped_items[category])
 
     # Determine the number of outfits to generate
-    num_outfits = min(
-        len(grouped_items['Set']) if len(grouped_items['Set']) > 0 else len(grouped_items['Top']),
-        max_outfits
-    )
+    num_outfits = min(max_outfits, max(len(grouped_items['Set']), len(grouped_items['Top']), len(grouped_items['Bottom'])))
 
     outfit_combinations = []
 
     for i in range(num_outfits):
         outfit = []
-        if len(grouped_items['Set']) > 0:
-            # If 'Set' is being used, include only one 'Set'
-            set_item = grouped_items['Set'][i]
+        # Randomly decide to use 'Set' or 'Top-Bottom'
+        use_set = False
+        if can_use_set and can_use_top_bottom:
+            use_set = random.choice([True, False])
+        elif can_use_set:
+            use_set = True
+        elif can_use_top_bottom:
+            use_set = False
+
+        if use_set:
+            set_item = grouped_items['Set'][i % len(grouped_items['Set'])]
             outfit.append({
                 'clothing_type': 'Set',
                 'item_id': set_item.product_id,
@@ -609,10 +592,10 @@ def generate_outfit_combinations(
                 'eBay_link': None,
                 'gender': set_item.gender
             })
+            logger.debug(f"Using Set: '{set_item.product_name}'")
         else:
-            # If 'Set' is not used, include 'Top' and 'Bottom'
-            top = grouped_items['Top'][i]
-            bottom = grouped_items['Bottom'][i % len(grouped_items['Bottom'])]  # Avoid IndexError
+            top = grouped_items['Top'][i % len(grouped_items['Top'])]
+            bottom = grouped_items['Bottom'][i % len(grouped_items['Bottom'])]
             outfit.extend([
                 {
                     'clothing_type': 'Top',
@@ -631,9 +614,10 @@ def generate_outfit_combinations(
                     'gender': bottom.gender
                 }
             ])
+            logger.debug(f"Using Top: '{top.product_name}' and Bottom: '{bottom.product_name}'")
 
         # Always add 'Shoes'
-        shoe = grouped_items['Shoes'][i % len(grouped_items['Shoes'])]  # Avoid IndexError
+        shoe = grouped_items['Shoes'][i % len(grouped_items['Shoes'])]
         outfit.append({
             'clothing_type': 'Shoes',
             'item_id': shoe.product_id,
@@ -642,10 +626,11 @@ def generate_outfit_combinations(
             'eBay_link': None,
             'gender': shoe.gender
         })
+        logger.debug(f"Adding Shoes: '{shoe.product_name}' to the outfit.")
 
-        # Optionally add 'Outerwear' if included
+        # Optionally add 'Outerwear'
         if include_outerwear and len(grouped_items['Outerwear']) > 0:
-            outer = random.choice(grouped_items['Outerwear'])
+            outer = grouped_items['Outerwear'][random.randint(0, len(grouped_items['Outerwear']) - 1)]
             outfit.append({
                 'clothing_type': 'Outerwear',
                 'item_id': outer.product_id,
@@ -656,9 +641,9 @@ def generate_outfit_combinations(
             })
             logger.debug(f"Added 'Outerwear': '{outer.product_name}' to the outfit.")
 
-        # Optionally add 'Accessories' if available
+        # Optionally add 'Accessories'
         if len(grouped_items['Accessories']) > 0:
-            accessory = random.choice(grouped_items['Accessories'])
+            accessory = grouped_items['Accessories'][random.randint(0, len(grouped_items['Accessories']) - 1)]
             outfit.append({
                 'clothing_type': 'Accessories',
                 'item_id': accessory.product_id,
@@ -677,9 +662,6 @@ def generate_outfit_combinations(
 
 
 def fetch_similar_products_for_outfits(outfit_combinations: List[List[Dict[str, Any]]], db: Session) -> List[List[Dict[str, Any]]]:
-    """
-    For each clothing item in the outfits, fetch similar products from eBay and add the links.
-    """
     for outfit in outfit_combinations:
         for component in outfit:
             product_name = component['product_name']
@@ -701,6 +683,7 @@ def fetch_similar_products_for_outfits(outfit_combinations: List[List[Dict[str, 
                 component['eBay_link'] = []  # Assign empty list
                 component['gender'] = 'Unisex'  # Default
     return outfit_combinations
+
 
 def generate_outfit_image(outfit_components: List[Dict[str, Any]]) -> Optional[str]:
     """
@@ -730,6 +713,7 @@ def generate_outfit_image(outfit_components: List[Dict[str, Any]]) -> Optional[s
             "\n".join([f"{idx + 1}. {desc}" for idx, desc in enumerate(clothing_descriptions)]) +
             "\n\n"
             "The individual should have a confident and relaxed pose, evoking a modern and elegant aesthetic. "
+            "Make sure you read the outfit names properly and work hard to accurately create the outfit specially the color"
             "Use a neutral studio background with soft lighting to highlight the outfit. Ensure the outfit fits naturally and realistically on the individual, "
             "emphasizing the textures and styles of the clothing items."
         )
