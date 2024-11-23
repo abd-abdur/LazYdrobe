@@ -13,10 +13,9 @@ passlib[bcrypt]
 pymysql
 inflect
 aiohttp
-asyncio
 openai==0.28.0
-scikit-learn
-alembic
-cachetools
+scikit-learn>=1.5.2
+alembic>=1.14.0
+cachetools>=5.5.0
 fal-client  
 en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.5.0/en_core_web_sm-3.5.0.tar.gz

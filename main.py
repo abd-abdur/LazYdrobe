@@ -895,7 +895,6 @@ def suggest_outfit_endpoint(request: OutfitSuggestionRequest, db: Session = Depe
         raise HTTPException(status_code=500, detail="Failed to suggest outfits.")
 
 
-
 from sqlalchemy.orm import joinedload
 
 @app.get("/outfits/suggestions/{user_id}", response_model=List[OutfitSuggestionResponse])
@@ -927,6 +926,33 @@ def delete_all_outfit_suggestions(user_id: int, db: Session = Depends(get_db)):
     deleted = db.query(OutfitSuggestion).filter(OutfitSuggestion.user_id == user_id).delete()
     db.commit()
     logger.info(f"Deleted {deleted} outfit suggestion(s) for user_id={user_id}.")
+    return
+
+## Delete Outfit Suggestion
+
+@app.delete("/outfits/suggestions/", status_code=status.HTTP_204_NO_CONTENT)
+def delete_wardrobe_item(suggestion_id: List[int] = Body(..., embed=True), db: Session = Depends(get_db)):
+    logger.info(f"Deleting outfit suggestions with IDs: {suggestion_id}")
+
+    not_found_items = []
+    for id in suggestion_id:
+        suggestion = db.query(OutfitSuggestion).filter(OutfitSuggestion.suggestion_id == id).first()
+        if not suggestion:
+            not_found_items.append(suggestion_id)
+        else:
+            try:
+                db.delete(suggestion)
+                db.commit()
+                logger.info(f"Outfit suggestion with ID {id} deleted successfully.")
+            except Exception as e:
+                db.rollback()
+                logger.error(f"Failed to delete outfit suggestion with ID {id}: {e}")
+                raise HTTPException(status_code=500, detail=f"Failed to delete outfit suggestion with ID {id}: {str(e)}")
+
+    # If there are any items not found, return a 404 error
+    if not_found_items:
+        raise HTTPException(status_code=404, detail=f"Wardrobe items with IDs {', '.join(map(str, not_found_items))} not found.")
+
     return
 
 ## Exception Handlers
