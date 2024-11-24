@@ -49,7 +49,7 @@ def map_product_to_category(suggested_item_type: str) -> Optional[str]:
 
     categories = {
         'Top': [
-            't-shirt', 'tank top', 'blouse', 'sweater', 'hoodie',
+            't-shirt', 'tank top', 'blouse', 'sweater', 'hoodie', 'cardigan',
             'shirt', 'crop top', 'camisole', 'polo shirt', 'long sleeve shirt',
             'turtleneck', 'thermal wear'
         ],
@@ -65,14 +65,14 @@ def map_product_to_category(suggested_item_type: str) -> Optional[str]:
         'Outerwear': [
             'jacket', 'coat', 'blazer', 'raincoat', 'windbreaker',
             'denim jacket', 'leather jacket', 'trench coat', 'poncho',
-            'winter coat', 'cardigan'
+            'winter coat'
         ],
         'Accessories': [
             'gloves', 'necklace', 'scarf', 'sunglasses', 'hat', 'belt',
             'watch', 'earrings', 'bracelet', 'handbag'
         ],
         'Set': [
-            'set', 'suit set', 'complete suit', 'jumpsuit'
+            'set', 'suit set', 'complete suit', 'jumpsuit', 'dress'
         ]
     }
 
@@ -369,7 +369,6 @@ def get_latest_weather(db: Session, user_id: int) -> Optional[WeatherData]:
         return None
 
     weather = db.query(WeatherData).filter(
-        WeatherData.user_id == user_id,
         WeatherData.location == user.location
     ).order_by(WeatherData.date.desc()).first()
 
@@ -410,7 +409,7 @@ def determine_clothing_types(weather: WeatherData, trends: List[FashionTrend]) -
         clothing_types.update(['Raincoat', 'Umbrella', 'Waterproof Boots', 'Rain Hat', 'Poncho', 'Scarf'])
 
     # Sunny Weather
-    if any(word in condition for word in ['sunny', 'hat']):
+    if any(word in condition for word in ['sunny', 'clear', 'partly cloudy', 'hot']):
         clothing_types.update(['Sunglasses', 'Wide-Brim Hat', 'Cap'])
 
     # Snowy Weather
@@ -419,11 +418,11 @@ def determine_clothing_types(weather: WeatherData, trends: List[FashionTrend]) -
 
     # Cold Weather (<= 35°F)
     if temp_max <= 35:
-        clothing_types.update([ 'Sneakers', 'Sweater', 'Jeans', 'Pants', 'Thermal Wear', 'Gloves', 'Beanie', 'Insulated Boots', 'Scarf', 'Turtleneck', 'Boots', 'Hoodie'])
+        clothing_types.update([ 'Sneakers', 'Sweater', 'Jeans', 'Pants', 'Thermal Wear', 'Gloves', 'Beanie', 'Insulated Boots', 'Scarf', 'Turtleneck', 'Boots', 'Hoodie', 'Cardigan'])
 
     # Warm Weather (> 75°F)
     if temp_max > 75:
-        clothing_types.update(['Shorts', 'Flats', 'Heels', 'Jeans', 'T-Shirt', "Leggings", 'Pants', 'Tank Top', 'Sandals', 'Shoe', 'Sneakers', 'Skirt', 'Blouse', 'Dress', 'Camisole', 'Crop Top'])
+        clothing_types.update(['Shorts', 'Flats', 'Heels', 'Jeans', 'T-Shirt', 'Pants', 'Tank Top', 'Sandals', 'Shoe', 'Sneakers', 'Skirt', 'Blouse', 'Dress', 'Camisole', 'Crop Top'])
 
     # Mild Weather (60°F to 75°F)
     if 60 < temp_max <= 75:
@@ -431,7 +430,7 @@ def determine_clothing_types(weather: WeatherData, trends: List[FashionTrend]) -
 
     # Cool Weather (35°F to 60°F)
     if 35 < temp_max <= 60:
-        clothing_types.update(['Sweater', 'Shoe', 'Boots', 'T-Shirt', 'Sneakers', 'Jacket', 'Coat', 'Pants', 'Jeans', 'Hoodie', 'Thermal Wear', 'Leggings'])
+        clothing_types.update(['Sweater', 'Shoe', 'Boots', 'T-Shirt', 'Sneakers', 'Jacket', 'Coat', 'Pants', 'Jeans', 'Hoodie', 'Cardigan', 'Thermal Wear'])
 
     # Special Weather Conditions
     if 'windy' in condition:
@@ -715,7 +714,7 @@ def generate_outfit_image(outfit_components: List[Dict[str, Any]]) -> Optional[s
             "The individual should have a confident and relaxed pose, evoking a modern and elegant aesthetic. "
             "Make sure you read the outfit names properly and work hard to accurately create the outfit specially the color"
             "Use a neutral studio background with soft lighting to highlight the outfit. Ensure the outfit fits naturally and realistically on the individual, "
-            "emphasizing the textures and styles of the clothing items. Main thing is you can find the color from the product name and accurately generate the outfit"
+            "emphasizing the textures and styles of the clothing items."
         )
         
         # Set your Flux AI API key

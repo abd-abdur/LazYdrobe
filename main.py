@@ -291,11 +291,10 @@ def fetch_weather_data_from_db(location: str, user_id: Optional[int] = None) -> 
     logger.info(f"Fetching data from database for location: {location}")
 
     try:
-        # Fetch weather data in descending order to get the latest first
         query = db.query(WeatherData).filter(
             WeatherData.location == location,
             WeatherData.date >= today
-        ).order_by(WeatherData.date.desc())  # Descending order
+        ).order_by(WeatherData.date) 
 
         if user_id:
             query = query.filter(WeatherData.user_id == user_id)
