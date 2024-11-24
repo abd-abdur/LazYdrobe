@@ -1,6 +1,6 @@
 ALLOWED_CATEGORIES = [
     # Tops
-    'T-Shirt', 'Tank Top', 'Blouse', 'Sweater', 'Hoodie', 'Cardigan',
+    'T-Shirt', 'Tank_Top', 'Blouse', 'Sweater', 'Hoodie', 'Cardigan',
     'Shirt', 'Crop Top', 'Camisole', 'Polo Shirt', 'Long Sleeve Shirt',
     'Turtleneck',
 

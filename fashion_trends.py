@@ -855,12 +855,12 @@ def fetch_and_update_fashion_trends(db: Session):
     urls = [
         "https://www.vogue.com/",
         "https://www.vogue.com/article/corduroy-pants#intcid=_vogue-verso-hp-trending_a5d8dd57-5bc8-447f-8eb9-98495b16e7f9_popular4-1",
-        "https://www.glamour.com/story/2024-fashion-trends",
+        "https://theadultman.com/fashion-and-style/mens-fashion-trends",
         "https://www.whowhatwear.com/fashion/trends/autumn-winter-2024-fashion-trends",
         "https://www.nordstrom.com/browse/content/fall-fashion-trends",
         "https://www.thewardrobeconsultant.com/blog/fall-fashion-trends-2024-style-guide",
         "https://www.whowhatwear.com/fall-winter-fashion-trends-2024",
-        "https://www.travelandleisure.com/fall-fashion-trends-travel-clothes-september-2024-8707774"
+        "https://www.marieclaire.com/fashion/g4566/chic-rain-jackets"
     ]
 
     logger.info("Starting to fetch articles...")
