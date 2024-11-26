@@ -25,7 +25,6 @@ class User(Base):
     username = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password = Column(String(255), nullable=False)
-    user_ip = Column(String(255))
     location = Column(String(255))
     preferences = Column(JSON, nullable=True)
     gender = Column(String(50), nullable=True)
@@ -67,7 +66,7 @@ class WardrobeItem(Base):
     color = Column(JSON, nullable=True)
     size = Column(String(50), nullable=True)
     tags = Column(JSON, nullable=True)
-    image_url = Column(String(255), nullable=True)
+    image_url = Column(String(2083), nullable=True)
     date_added = Column(DateTime, server_default=func.now())
 
     owner = relationship("User", back_populates="wardrobe_items")

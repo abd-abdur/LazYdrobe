@@ -23,122 +23,6 @@ This is the backend for the LazYdrobe Wardrobe Management Application. It is bui
 
 The **LazYdrobe** database manages user data, wardrobe items, outfit suggestions, weather data, fashion trends, and e-commerce products. It uses a **SQL relational model** for efficient data retrieval and manipulation.
 
-## Schema Diagram
-
-![LazYdrobe Schema](schema.png)
-
-## Data Model Description
-
-The **LazYdrobe** database is designed using a **SQL relational model**. Below are the key entities and relationships in the system:
-
-### **1. users**
-Stores user information, including preferences and their wardrobe.
-
-- **Attributes**:
-  - `user_id` (Primary Key): Unique identifier for each user.
-  - `username`: User's display name.
-  - `email`: User's email address.
-  - `password`: Hashed password for user authentication.
-  - `user_ip`: User's ip for more accurate location.
-  - `location`: User's location for weather-based outfit suggestions.
-  - `preferences`: Json of fashion styles preferred by the user.
-  - - `gender` : User's gender
-  - `date_joined`: Date the user registered on the app.
-
-### **2. wardrobe_items**
-Represents individual clothing items uploaded by a user which can be connected to an e-commerce product.
-
-- **Attributes**:
-  - `item_id` (Primary Key): Unique identifier for each clothing item.
-  - `user_id` (Foreign Key): Links to the `Users` table.
-  - `product_id` (Foreign Key): Links to the `eCommerceProduct` table if the item corresponds to a purchasable product.
-  - `clothing_type`: Type of clothing (e.g., jacket, pants).
-  - `for_weather`: Suitable weather for the clothing item.
-  - `color`: Json of colors for the item.
-  - `size`: Size of the clothing item.
-  - `tags`: Json of tags related to the clothing item.
-  - `image_url`: URL for the image of the clothing.
-  - `date_added`: Date the item was added to the wardrobe.
-
-### **3. ecommerce_product**
-Represents clothing items that can be purchased online, recommended to users based on wardrobe gaps.
-
-- **Attributes**:
-  - `product_id` (Primary Key): Unique identifier for the product.
-  - `product_name`: Name of the product.
-  - `suggested_item_type`: Type of item the product suggests (e.g., outerwear, footwear).
-  - `price`: Price of the product.
-  - `product_url`: URL to the product page for purchase.
-  - `image_url`: URL for the product's image.
-  - `date_suggested`: Date when the product was suggested to a user.
-
-### **4. weather_data**
-Stores weather data relevant to a user's location for making weather-appropriate outfit suggestions.
-
-- **Attributes**:
-  - `weather_id` (Primary Key): Unique identifier for the weather.
-  - `date`: Date when the weather data was recorded.
-  - `location`: The location for which the weather data applies.
-  - `temp_max`: Maximum temperature.
-  - `temp_min`: Minimum temperature.
-  - `feels_max`: Feels-like maximum temperature.
-  - `feels_min`: Feels-like minimum temperature.
-  - `wind_speed`: Wind speed.
-  - `humidity`: Humidity percentage.
-  - `precipitation`: Amount of precipitation.
-  - `precipitation_probability`: Probability of precipitation.
-  - `special_condition`: Description of any special weather conditions (e.g., snow, thunderstorms).
-  - `weather_icon`: Name of icon to display.
-
-### **5. outfits**
-Stores information about generated outfit suggestions based on user wardrobe, weather, and trends.
-
-- **Attributes**:
-  - `outfit_id` (Primary Key): Unique identifier for the outfit.
-  - `user_id` (Foreign Key): Links to the `Users` table.
-  - `clothings`: Json of clothing item IDs that make up the outfit.
-  - `occasion`: Json of occasions the outfit is suitable for.
-  - `for_weather`: Weather conditions the outfit is appropriate for.
-  - `date_suggested`: Date when the outfit was suggested to the user.
-  - `source_url`: URL where the outfit inspiration came from.
-
-### **6. fashion_trends**
-Stores fashion trend data that helps inform outfit recommendations.
-
-- **Attributes**:
-  - `trend_id` (Primary Key): Unique identifier for each trend.
-  - `trend_names`: Name of the fashion trend.
-  - `trend_description`: Description of the trend.
-  - `outfits`: Json of outfits that fit the trend.
-  - `example_url`: URL to an image showcasing the trend.
-  - `date_added`: Date when the trend was added.
-
-### **Relationships**
-- **user** to **wardrobe_items**: One-to-Many (a user can have multiple clothing items in their wardrobe).
-- **user** to **outfits**: One-to-Many (a user can have multiple outfits saved).
-- **user** to **weather**: Many-to-Many (users can share the same weather).
-- **wardrobe_items** to **ecommerce_product**: Many-to-One (many clothing items may share a related e-commerce product).
-- **wardrobe_items** to **outfits**: Many-to-Many (an outfit consists of multiple wardrobe items, clothing items can suit multiple outfits).
-- **weather_data** to **outfits**: Many-to-Many (a weather can be suitable for different outfits, and an outfit can be suitable for multiple weather).
-- **fashion_trends** to **outfits**: One-to-Many (fashion trends may share the same outfit)
-
-### Why We Chose SQL for LazYdrobe
-
-1. **Structured Data and Relationships**  
-   LazYdrobe handles well-defined entities like Users, Wardrobe Items, Outfits, and Weather Data, all with clear relationships. SQL's use of primary and foreign keys helps enforce these connections efficiently ensuring data integrity.
-
-2. **Data Integrity and Consistency**  
-   SQL provides ACID properties (Atomicity, Consistency, Isolation, Durability) to maintain strong data integrity. This ensures that operations like adding wardrobe items or generating outfit suggestions are reliable and consistent.
-
-3. **Complex Queries**  
-   Generating outfit suggestions requires complex joins between multiple tables (e.g., Users, WardrobeItems, WeatherData). SQL excels at handling such joins and aggregations making it ideal for our application's data retrieval needs.
-
-4. **Scalability**  
-   Modern SQL databases support scalability through partitioning and indexing making them capable of handling larger datasets as the app grows.
-
-5. **Data Consistency Over Flexibility**  
-   LazYdrobe benefits from the structured schema enforcement SQL provides. While NoSQL offers flexibility, SQL's consistency ensures that wardrobe items, trends, and weather data are always valid and related correctly.
-
 ## Prerequisites
 
 Before you set up **LazYdrobe** ensure that you have the following tools installed:
@@ -193,10 +77,10 @@ pip install -r requirements.txt
 ### Step 5: Create a .env file in the project root directory
 Add the following fields:
 - DATABASE_URL
-- visualcrossing_API_KEY
 - OpenAI_API_Key
-- ebay_API_KEY
-
+- VISUAL_CROSSING_API_KEY
+- EBAY_APP_ID
+- FAL_KEY
 
 ### Step 6: Launch Your Database Management System (DBMS)
 You need to use a SQL-compatible DBMS like PostgreSQL, MySQL, MariaDB, or similar. Open your DBMS and navigate to the query editor.
@@ -228,36 +112,163 @@ alembic upgrade head
 
 ```
 
+## Schema Diagram
+
+![LazYdrobe Schema](schema.png)
+
+## Data Model Description
+
+The **LazYdrobe** database is designed using a **SQL relational model**. Below are the key entities and relationships in the system:
+
+### **1. users**
+Stores user information, including preferences and their wardrobe.
+
+- **Attributes**:
+  - `user_id` (Primary Key): Unique identifier for each user.
+  - `username`: User's display name.
+  - `email`: User's email address.
+  - `password`: Hashed password for user authentication.
+  - `location`: User's location for weather-based outfit suggestions.
+  - `preferences`: Json of fashion styles preferred by the user.
+  - `gender` : User's gender
+  - `date_joined`: Date the user registered on the app.
+
+### **2. wardrobe_items**
+Represents individual clothing items uploaded by a user which can be connected to an e-commerce product.
+
+- **Attributes**:
+  - `item_id` (Primary Key): Unique identifier for each clothing item.
+  - `user_id` (Foreign Key): Links to the `Users` table.
+  - `clothing_type`: Type of clothing (e.g., jacket, pants).
+  - `for_weather`: Suitable weather for the clothing item.
+  - `color`: Json of colors for the item.
+  - `size`: Size of the clothing item.
+  - `tags`: Json of tags related to the clothing item.
+  - `image_url`: URL for the image of the clothing.
+  - `date_added`: Date the item was added to the wardrobe.
+
+### **3. ecommerce_product**
+Represents clothing items that can be purchased online, recommended to users based on wardrobe gaps.
+
+- **Attributes**:
+  - `product_id` (Primary Key): Unique identifier for the product.
+  - `product_name`: Name of the product.
+  - `suggested_item_type`: Type of item the product suggests (e.g., outerwear, footwear).
+  - `price`: Price of the product.
+  - `product_url`: URL to the product page for purchase.
+  - `image_url`: URL for the product's image.
+  - `date_suggested`: Date when the product was suggested to a user.
+
+### **4. weather_data**
+Stores weather data relevant to a user's location for making weather-appropriate outfit suggestions.
+
+- **Attributes**:
+  - `weather_id` (Primary Key): Unique identifier for the weather.
+  - `date`: Date when the weather data was recorded.
+  - `location`: The location for which the weather data applies.
+  - `temp_max`: Maximum temperature.
+  - `temp_min`: Minimum temperature.
+  - `feels_max`: Feels-like maximum temperature.
+  - `feels_min`: Feels-like minimum temperature.
+  - `wind_speed`: Wind speed.
+  - `humidity`: Humidity percentage.
+  - `precipitation`: Amount of precipitation.
+  - `precipitation_probability`: Probability of precipitation.
+  - `special_condition`: Description of any special weather conditions (e.g., snow, thunderstorms).
+  - `weather_icon`: Name of icon to display.
+
+### **5. outfit_suggestions**
+Stores information about generated outfit suggestions based on user wardrobe, weather, and trends.
+
+- **Attributes**:
+  - `suggestion_id` (Primary Key): Unique identifier for the outfit suggestion.
+  - `user_id` (Foreign Key): Links to the `Users` table.
+  - `clothings`: Json of clothing item IDs that make up the outfit.
+  - `occasion`: Json of occasions the outfit is suitable for.
+  - `for_weather`: Weather conditions the outfit is appropriate for.
+  - `date_suggested`: Date when the outfit was suggested to the user.
+  - `source_url`: URL where the outfit inspiration came from.
+
+### **6. fashion_trends**
+Stores fashion trend data that helps inform outfit recommendations.
+
+- **Attributes**:
+  - `trend_id` (Primary Key): Unique identifier for each trend.
+  - `trend_names`: Name of the fashion trend.
+  - `trend_description`: Description of the trend.
+  - `outfits`: Json of outfits that fit the trend.
+  - `example_url`: URL to an image showcasing the trend.
+  - `date_added`: Date when the trend was added.
+
+### **7. outfits**
+Stores information about generated outfit suggestions based on user wardrobe, weather, and trends.
+
+- **Attributes**:
+  - `outfit_id` (Primary Key): Unique identifier for the outfit.
+  - `user_id` (Foreign Key): Links to the `Users` table.
+  - `clothings`: Json of clothing item IDs that make up the outfit.
+  - `occasion`: Json of occasions the outfit is suitable for.
+  - `for_weather`: Weather conditions the outfit is appropriate for.
+  - `date_suggested`: Date when the outfit was suggested to the user.
+  - `source_url`: URL where the outfit inspiration came from.
+
+### **Relationships**
+- **user** to **wardrobe_items**: One-to-Many (a user can have multiple clothing items in their wardrobe).
+- **user** to **outfits**: One-to-Many (a user can have multiple outfits saved).
+- **user** to **outfit_suggestions**: One-to-Many (a user can have multiple outfits suggestions saved).
+- **user** to **weather**: Many-to-Many (users can share the same weather and locations).
+- **outfit_suggestions** to **ecommerce_product**: Many-to-One (many outfit suggestions may share a related e-commerce product).
+- **wardrobe_items** to **outfits**: Many-to-Many (an outfit consists of multiple wardrobe items, clothing items can suit multiple outfits).
+
+### Why We Chose SQL for LazYdrobe
+
+1. **Structured Data and Relationships**  
+   LazYdrobe handles well-defined entities like Users, Wardrobe Items, Outfits, and Weather Data, all with clear relationships. SQL's use of primary and foreign keys helps enforce these connections efficiently ensuring data integrity.
+
+2. **Data Integrity and Consistency**  
+   SQL provides ACID properties (Atomicity, Consistency, Isolation, Durability) to maintain strong data integrity. This ensures that operations like adding wardrobe items or generating outfit suggestions are reliable and consistent.
+
+3. **Complex Queries**  
+   Generating outfit suggestions requires complex joins between multiple tables (e.g., Users, WardrobeItems, WeatherData). SQL excels at handling such joins and aggregations making it ideal for our application's data retrieval needs.
+
+4. **Scalability**  
+   Modern SQL databases support scalability through partitioning and indexing making them capable of handling larger datasets as the app grows.
+
+5. **Data Consistency Over Flexibility**  
+   LazYdrobe benefits from the structured schema enforcement SQL provides. While NoSQL offers flexibility, SQL's consistency ensures that wardrobe items, trends, and weather data are always valid and related correctly.
+
+
 ## Database Structure and Key Components
 
 ### 1. Users Table
 Purpose: Stores basic information about each user.
-Key Fields: user_id, username, email, password_hash, location, preferences, date_joined.
+Key Fields: user_id, username, email, password, location, preferences, gender, date_joined.
 Primary Key: user_id (auto-incremented for uniqueness).
 Unique Constraints: email must be unique.
 ### 2. Wardrobe_Items Table
 Purpose: Stores information about wardrobe items owned by users.
-Key Fields: item_id, user_id, type, season, fabric, color, size, tags, image_url, date_added.
+Key Fields: item_id, user_id, clothing_type, for_weather, color, size, tags, image_url, date_added.
 Foreign Key: user_id references Users(user_id), ensuring each wardrobe item belongs to a valid user.
 Relationships: If a user is deleted, their wardrobe items are also deleted (ON DELETE CASCADE).
 ### 3. Outfits Table
-Purpose: Stores outfits that are suggested or created for different occasions.
-Key Fields: outfit_id, user_id, occasion, weather_condition, trend_score, date_suggested.
+Purpose: Stores outfits that are created by users.
+Key Fields: outfit_id, clothings, user_id, occasion, for_weather, source_url, date_suggested.
+Foreign Key: user_id references Users(user_id), clothings stores Wardrobe_Items(item_id).
+### 4. Outfit_Suggestions Table
+Purpose: Stores outfits that are suggested for users.
+Key Fields: suggestion_id, user_id, outfit_details, gender, image_url, date_suggested.
 Foreign Key: user_id references Users(user_id).
-### 4. Outfit_Wardrobe_Items Table
-Purpose: A junction table that links outfits to specific wardrobe items (many-to-many relationships).
-Key Fields: outfit_id, item_id (composite primary key).
-Foreign Keys: Links outfit_id to Outfits(outfit_id) and item_id to Wardrobe_Items(item_id).
 ### 5. Weather_Data Table
 Purpose: Stores weather conditions relevant to a user's location.
-Key Fields: weather_id, user_id, location, temperature, precipitation, wind_speed, humidity, date_fetched.
+Key Fields: weather_id, date, location, temp_min, temp_max, ...
 Foreign Key: user_id references Users(user_id).
 ### 6. Fashion_Trends Table
-Purpose: Stores information about fashion trends, including categories and source URLs.
-Key Fields: trend_id, title, description, categories, image_url, date_fetched, source_url.
+Purpose: Stores information about fashion trends.
+Key Fields: trend_id, trned_names, trend_description, date_added, user_id, tremd_search phrase.
+Foreign Key: user_id references Users(user_id).
 ### 7. E_Commerce_Products Table
 Purpose: Stores product suggestions related to wardrobe items, linked to e-commerce platforms.
-Key Fields: product_id, user_id, suggested_item_type, product_name, price, product_url, image_url, date_suggested.
+Key Fields: product_id, user_id, suggested_item_type, product_name, price, product_url, image_url, date_suggested...
 Foreign Key: user_id references Users(user_id).
 
 ## Testing the Database
@@ -307,7 +318,6 @@ Follow the structure below for each request:
       "username": "john_doe",
       "email": "john@example.com",
       "password": "securepassword123",
-      "user_ip": "192.168.1.1",
       "location": "New York, US",
       "preferences": ["casual", "outdoor"],
       "gender": "male"
@@ -586,17 +596,32 @@ Follow the structure below for each request:
     ]
     ```
 
-#### 20. Delete an Outfit Suggestion
+#### 20. Delete all Outfit Suggestion
 - **Method**: `DELETE`
-- **Endpoint**: `http://127.0.0.1:8000/outfits/suggestions/{suggestion_id}`
+- **Endpoint**: `http://127.0.0.1:8000/outfits/suggestions/all`
 - **Input**:
-    - URL Path Parameter: `{suggestion_id}` (e.g., `40`)
+    - URL Path Parameter: `{user_id}` (e.g., `40`)
 - **Expected Output**:
   ```json
   {
-    "message": "Outfit suggestion with ID {suggestion_id} deleted successfully."
+    "message": "Deleted {deleted} outfit suggestion(s) for user_id={user_id}."
   }
 
+#### 21. Delete Outfit Suggestions
+- **Method**: `DELETE`
+- **Endpoint**: `http://127.0.0.1:8000/outfits/suggestions/`
+- **JSON Input**:
+    ```json
+    {
+      "suggestion_ids": [1, 2]
+    }
+    ```
+- **Expected Output**:
+    ```json
+    {
+      "message": "Outfit suggestions with IDs {suggestion_ids} deleted successfully."
+    }
+    ```
 
 For reference, you can find all the API tests in the [Postman_Tests.txt](Postman_Tests.txt) file. This file contains descriptions of each API endpoint including method types, expected inputs, and outputs.
 

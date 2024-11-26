@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(50) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    user_ip VARCHAR(255),
     location VARCHAR(255),
     preferences JSON,
     date_joined TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -31,7 +30,7 @@ CREATE TABLE IF NOT EXISTS wardrobe_items (
     color JSON,
     size VARCHAR(50),
     tags JSON,
-    image_url VARCHAR(511),
+    image_url VARCHAR(2083),
     date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_user_clothing FOREIGN KEY (user_id)
         REFERENCES users(user_id)
@@ -84,4 +83,17 @@ CREATE TABLE IF NOT EXISTS weather_data (
     precipitation_probability FLOAT NOT NULL,
     special_condition VARCHAR(255),
     weather_icon VARCHAR(255)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS outfit_suggestions (
+    suggeestion_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    outfit_details JSON NOT NULL,
+    gender VARCHAR(10),
+    image_url VARCHAR(2083),
+    date_suggested TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_user_outfit FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
 ) ENGINE=InnoDB;

@@ -10,7 +10,6 @@ Postman Tests for API Endpoints
     "username": "johndoe",
     "email": "johndoe@example.com",
     "password": "SecurePassword123",
-    "user_ip": "192.168.1.1",
     "location": "New York, USA",
     "preferences": {"fashion": ["casual", "formal"]},
     "gender": "Male"
@@ -380,10 +379,20 @@ Postman Tests for API Endpoints
     }
 ]
 
-20. Delete an Outfit Suggestion
-- **Endpoint**: DELETE /outfits/suggestions/{suggestion_id}
+20. Delete all Outfit Suggestionx
+- **Endpoint**: DELETE /outfits/suggestions/all
 - **Method**: DELETE
 - **URL Parameters**:
-  - suggestion_id: Replace {suggestion_id} with the ID of the suggestion to delete (e.g., 40).
+  - user_id
 - **Output**: 
+204 No Content
+
+21. Delete Outfit Suggestions
+- **Endpoint**: DELETE /outfits/suggestions/
+- **Method**: DELETE
+- **JSON Input**:
+{
+    "suggestion_ids": [101, 102]
+}
+- **Output**:
 204 No Content

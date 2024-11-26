@@ -25,7 +25,6 @@ def upgrade() -> None:
     sa.Column('username', sa.String(length=255), nullable=False),
     sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('password', sa.String(length=255), nullable=False),
-    sa.Column('user_ip', sa.String(length=255), nullable=True),
     sa.Column('location', sa.String(length=255), nullable=True),
     sa.Column('preferences', sa.JSON(), nullable=True),
     sa.Column('gender', sa.String(length=50), nullable=True),
@@ -107,7 +106,6 @@ def upgrade() -> None:
     op.create_table('wardrobe_items',
     sa.Column('item_id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=True),
-    sa.Column('product_id', sa.BigInteger(), nullable=True),
     sa.Column('clothing_type', sa.String(length=255), nullable=False),
     sa.Column('for_weather', sa.String(length=255), nullable=True),
     sa.Column('color', sa.JSON(), nullable=True),
@@ -115,7 +113,6 @@ def upgrade() -> None:
     sa.Column('tags', sa.JSON(), nullable=True),
     sa.Column('image_url', sa.String(length=255), nullable=True),
     sa.Column('date_added', sa.DateTime(), server_default=sa.text('now()'), nullable=True),
-    sa.ForeignKeyConstraint(['product_id'], ['ecommerce_products.product_id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ),
     sa.PrimaryKeyConstraint('item_id')
     )
