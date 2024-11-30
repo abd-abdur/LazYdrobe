@@ -53,14 +53,12 @@ class EcommerceProduct(Base):
     gender = Column(String(10), nullable=False, default='Unisex')
 
     user = relationship("User", back_populates="ecommerce_products")
-    wardrobe_items = relationship("WardrobeItem", back_populates="product")
 
 class WardrobeItem(Base):
     __tablename__ = "wardrobe_items"
 
     item_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.user_id"))
-    product_id = Column(BigInteger, ForeignKey("ecommerce_products.product_id"), nullable=True)
     clothing_type = Column(String(255), nullable=False)
     for_weather = Column(String(255), nullable=True)
     color = Column(JSON, nullable=True)
@@ -70,7 +68,6 @@ class WardrobeItem(Base):
     date_added = Column(DateTime, server_default=func.now())
 
     owner = relationship("User", back_populates="wardrobe_items")
-    product = relationship("EcommerceProduct", back_populates="wardrobe_items")
 
 class Outfit(Base):
     __tablename__ = "outfits"

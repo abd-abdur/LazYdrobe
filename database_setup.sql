@@ -24,7 +24,6 @@ CREATE TABLE IF NOT EXISTS ecommerce_products (
 CREATE TABLE IF NOT EXISTS wardrobe_items (
     item_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    product_id BIGINT DEFAULT NULL,  -- Changed to BIGINT to match ecommerce_products
     clothing_type VARCHAR(50) NOT NULL,
     for_weather VARCHAR(50),
     color JSON,
@@ -36,10 +35,6 @@ CREATE TABLE IF NOT EXISTS wardrobe_items (
         REFERENCES users(user_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
-    CONSTRAINT fk_product_clothing FOREIGN KEY (product_id)
-        REFERENCES ecommerce_products(product_id)
-        ON DELETE SET NULL
-        ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 -- Create outfits table

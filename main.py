@@ -68,7 +68,6 @@ app.add_middleware(
 class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
-    user_ip: Optional[str] = None
     location: str  # Now required
     preferences: Optional[List[str]] = None
     gender: Optional[str] = None
@@ -84,7 +83,6 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     username: Optional[str] = Field(None, min_length=3, max_length=50)
     email: Optional[EmailStr] = None
-    user_ip: Optional[str] = None
     location: Optional[str] = None
     preferences: Optional[List[str]] = None  # Expecting a list
     gender: Optional[str] = None
@@ -453,7 +451,6 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         username=user.username,
         email=user.email,
         password=hashed_password,
-        user_ip=user.user_ip,
         location=user.location,  # Now required
         preferences=user.preferences,
         gender=user.gender 
@@ -600,7 +597,6 @@ def create_wardrobe_item(item: WardrobeItemCreate, db: Session = Depends(get_db)
     # Create a new WardrobeItem instance
     db_item = WardrobeItem(
         user_id=item.user_id,
-        product_id=None, 
         clothing_type=item.clothing_type,
         for_weather=item.for_weather,
         color=item.color,
@@ -776,6 +772,23 @@ def get_fashion_trends(db: Session = Depends(get_db)):
     trends = db.query(FashionTrend).order_by(FashionTrend.date_added.desc()).all()
     return trends
 
+# Get latest 3 trends
+
+@app.get("/fashion-trends/latest", response_model=List[FashionTrendResponse])
+def get_fashion_trends(db: Session = Depends(get_db)):
+    logger.info("Fetching the latest three fashion trends")
+    trends = db.query(FashionTrend).order_by(FashionTrend.trend_id.desc()).limit(3).all()
+    logger.debug(f"Number of trends found: {len(trends)}")
+    
+    if not trends:
+        logger.warning("No fashion trends found in the database.")
+        raise HTTPException(status_code=404, detail="No fashion trends found.")
+
+    for trend in trends:
+        logger.debug(f"Trend ID: {trend.trend_id}, Name: {trend.trend_name}, Date Added: {trend.date_added}")
+    
+    return trends
+
 ## Create Custom Outfit
 @app.post("/outfit/", response_model=OutfitResponse, status_code=status.HTTP_201_CREATED)
 def create_outfit(outfit: OutfitCreate, db: Session = Depends(get_db)):
@@ -942,7 +955,7 @@ def delete_wardrobe_item(suggestion_id: List[int] = Body(..., embed=True), db: S
             try:
                 db.delete(suggestion)
                 db.commit()
-                logger.info(f"Outfit suggestion with ID {id} deleted successfully.")
+                logger.info(f"Outfit suggestions with IDs {id} deleted successfully.")
             except Exception as e:
                 db.rollback()
                 logger.error(f"Failed to delete outfit suggestion with ID {id}: {e}")
@@ -950,7 +963,7 @@ def delete_wardrobe_item(suggestion_id: List[int] = Body(..., embed=True), db: S
 
     # If there are any items not found, return a 404 error
     if not_found_items:
-        raise HTTPException(status_code=404, detail=f"Wardrobe items with IDs {', '.join(map(str, not_found_items))} not found.")
+        raise HTTPException(status_code=404, detail=f"Outfit suggestions with IDs {', '.join(map(str, not_found_items))} not found.")
 
     return
 
