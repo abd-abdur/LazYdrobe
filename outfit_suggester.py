@@ -292,7 +292,7 @@ def suggest_outfits(user_id: int, db: Session) -> OutfitSuggestion:
         overall_gender = determine_overall_outfit_gender(outfit_genders)
 
         # 11. Generate Image using Flux AI
-        image_url = generate_outfit_image(enriched_outfits[0])  # Assuming one outfit combination
+        image_url = generate_outfit_image(enriched_outfits[0], user.height, user.weight)  # Assuming one outfit combination
 
         outfit_suggestion = OutfitSuggestion(
             user_id=user_id,
@@ -684,9 +684,9 @@ def fetch_similar_products_for_outfits(outfit_combinations: List[List[Dict[str, 
     return outfit_combinations
 
 
-def generate_outfit_image(outfit_components: List[Dict[str, Any]]) -> Optional[str]:
+def generate_outfit_image(outfit_components: List[Dict[str, Any]], height, wieght) -> Optional[str]:
     """
-    Generates an image of the outfit using Flux AI by sending the clothing item names.
+    Generates an image of the outfit using Flux AI based on an input image link.
     
     Args:
         outfit_components (List[Dict[str, Any]]): List of clothing components in the outfit.
@@ -696,10 +696,23 @@ def generate_outfit_image(outfit_components: List[Dict[str, Any]]) -> Optional[s
     """
     try:
         logger.info("Starting image generation using Flux AI.")
+        # Set your Flux AI API key
+        fal_client_key = os.getenv("FAL_KEY")
+        if not fal_client_key:
+            logger.error("FAL_KEY is not set in environment variables.")
+            return None  # Alternatively, raise an exception
+
+        os.environ["FAL_KEY"] = fal_client_key  # Ensure the API key is set
         
         # Extract clothing item descriptions
         clothing_descriptions = []
+        image_urls = []
         for component in outfit_components:
+            image_url = component['image_url']
+            if not image_url.startswith(("http://", "https://")):
+                image_url = ""
+            else:
+                image_urls.append(image_url)
             clothing_type = component['clothing_type']
             product_name = component['product_name']
             # Customize the description as needed
@@ -711,19 +724,14 @@ def generate_outfit_image(outfit_components: List[Dict[str, Any]]) -> Optional[s
             "Create an image of a stylish individual wearing the following outfit:\n\n" +
             "\n".join([f"{idx + 1}. {desc}" for idx, desc in enumerate(clothing_descriptions)]) +
             "\n\n"
+            "Combine items into a cohesive and fashionable outfit on an individual. "
+            "The individual height should be {height} and weight should be {weight}"
             "The individual should have a confident and relaxed pose, evoking a modern and elegant aesthetic. "
-            "Make sure you read the outfit names properly and work hard to accurately create the outfit specially the color"
+            "If image url is provided, recreate the item in the image on the individual, with outfit description as aid."
+            "If image url is not provided, make sure you read the outfit names properly and work hard to accurately create the outfit specially the color"
             "Use a neutral studio background with soft lighting to highlight the outfit. Ensure the outfit fits naturally and realistically on the individual, "
             "emphasizing the textures and styles of the clothing items."
         )
-        
-        # Set your Flux AI API key
-        fal_client_key = os.getenv("FAL_KEY")
-        if not fal_client_key:
-            logger.error("FAL_KEY is not set in environment variables.")
-            return None  # Alternatively, raise an exception
-
-        os.environ["FAL_KEY"] = fal_client_key  # Ensure the API key is set
 
         # Function to handle log updates
         def on_queue_update(update):
@@ -736,6 +744,7 @@ def generate_outfit_image(outfit_components: List[Dict[str, Any]]) -> Optional[s
         result = fal_client.subscribe(
             "fal-ai/flux/dev",  # Model identifier; adjust as needed
             arguments={
+                "input_image_urls": image_urls if image_urls else None,
                 "prompt": prompt,
                 "image_size": "landscape_16_9",  # Aspect ratio suitable for human model display
                 "num_inference_steps": 50,      # High-quality output

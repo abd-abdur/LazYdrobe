@@ -28,6 +28,8 @@ class User(Base):
     location = Column(String(255))
     preferences = Column(JSON, nullable=True)
     gender = Column(String(50), nullable=True)
+    height = Column(String(10), nullable=True)
+    weight = Column(String(10), nullable=True)
     date_joined = Column(DateTime, server_default=func.now())
 
     wardrobe_items = relationship("WardrobeItem", back_populates="owner", cascade="all, delete-orphan")

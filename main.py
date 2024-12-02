@@ -71,6 +71,8 @@ class UserBase(BaseModel):
     location: str  # Now required
     preferences: Optional[List[str]] = None
     gender: Optional[str] = None
+    height: Optional[str] = None
+    weight: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -87,6 +89,8 @@ class UserUpdate(BaseModel):
     preferences: Optional[List[str]] = None  # Expecting a list
     gender: Optional[str] = None
     password: Optional[str] = Field(None, min_length=6)
+    height: Optional[str] = None
+    weight: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -453,7 +457,9 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         password=hashed_password,
         location=user.location,  # Now required
         preferences=user.preferences,
-        gender=user.gender 
+        gender=user.gender,
+        height=user.height,
+        weight=user.weight
     )
 
     db.add(db_user)
