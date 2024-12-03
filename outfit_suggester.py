@@ -684,12 +684,14 @@ def fetch_similar_products_for_outfits(outfit_combinations: List[List[Dict[str, 
     return outfit_combinations
 
 
-def generate_outfit_image(outfit_components: List[Dict[str, Any]], height, wieght) -> Optional[str]:
+def generate_outfit_image(outfit_components: List[Dict[str, Any]], height: str, weight:str) -> Optional[str]:
     """
     Generates an image of the outfit using Flux AI based on an input image link.
     
     Args:
         outfit_components (List[Dict[str, Any]]): List of clothing components in the outfit.
+        height (str): Height of the individual for the outfit display.
+        weight (str): Weight of the individual for the outfit display.
     
     Returns:
         Optional[str]: URL of the generated image or None if generation fails.
@@ -721,11 +723,10 @@ def generate_outfit_image(outfit_components: List[Dict[str, Any]], height, wiegh
         
         # Compose the prompt
         prompt = (
-            "Create an image of a stylish individual wearing the following outfit:\n\n" +
+            f"Create an image of a stylish individual of height {height} and weight {weight}, if available wearing the following outfit:\n\n" +
             "\n".join([f"{idx + 1}. {desc}" for idx, desc in enumerate(clothing_descriptions)]) +
             "\n\n"
-            "Combine items into a cohesive and fashionable outfit on an individual. "
-            "The individual height should be {height} and weight should be {weight}"
+            "Combine items into a cohesive and fashionable outfit with accessory, if provided on an individual. "
             "The individual should have a confident and relaxed pose, evoking a modern and elegant aesthetic. "
             "If image url is provided, recreate the item in the image on the individual, with outfit description as aid."
             "If image url is not provided, make sure you read the outfit names properly and work hard to accurately create the outfit specially the color"
@@ -744,7 +745,7 @@ def generate_outfit_image(outfit_components: List[Dict[str, Any]], height, wiegh
         result = fal_client.subscribe(
             "fal-ai/flux/dev",  # Model identifier; adjust as needed
             arguments={
-                "input_image_urls": image_urls if image_urls else None,
+                "image_url": image_urls if image_urls else None,
                 "prompt": prompt,
                 "image_size": "landscape_16_9",  # Aspect ratio suitable for human model display
                 "num_inference_steps": 50,      # High-quality output
