@@ -2,20 +2,18 @@ requests
 pandas
 beautifulsoup4
 python-dotenv
-spacy
+spacy>=3.7.2
 fastapi
 uvicorn
-sqlalchemy
+sqlalchemy>=2.0.0
 pydantic[email]>=2.0
-pydantic>=2.0
 psycopg2-binary
 passlib[bcrypt]
 pymysql
-inflect
-aiohttp
-openai==0.28.0
+inflect>=5.3.0
+openai>=1.0.0
 scikit-learn>=1.5.2
 alembic>=1.14.0
 cachetools>=5.5.0
-fal-client  
-en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.5.0/en_core_web_sm-3.5.0.tar.gz
+fal-client
+aiohttp>=3.9.0

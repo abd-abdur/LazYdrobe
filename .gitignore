@@ -6,3 +6,5 @@ venv/
 .vscode/
 node_modules/.venv/
 venv/
+flux.py/
+
